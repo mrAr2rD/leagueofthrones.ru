@@ -1,0 +1,26 @@
+daenerys_game1:
+  game: game_1a
+  player: daenerys
+  place: 1
+  points: 20
+  capitals: 2
+  dragons: 1
+  castles: 0
+
+jon_game1:
+  game: game_1a
+  player: jon
+  place: 2
+  points: 15
+  capitals: 1
+  dragons: 0
+  castles: 2
+
+cersei_game1:
+  game: game_1b
+  player: cersei
+  place: 1
+  points: 18
+  capitals: 1
+  dragons: 1
+  castles: 0

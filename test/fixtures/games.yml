@@ -1,0 +1,7 @@
+game_1a:
+  tour: tour_one
+  table_letter: A
+
+game_1b:
+  tour: tour_one
+  table_letter: B

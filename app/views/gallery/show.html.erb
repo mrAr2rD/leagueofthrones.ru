@@ -1,0 +1,45 @@
+<div class="max-w-5xl mx-auto px-3 py-6 torch-glow">
+
+  <%# ── HEADER ── %>
+  <header class="realm-header">
+    <h1 class="realm-title" style="font-size: clamp(14px, 3vw, 22px);">
+      <span class="icon-shield"></span> Галерея воинов
+    </h1>
+    <div class="pixel-chain">
+      <% 6.times do %><span class="pixel-chain-link"></span><% end %>
+      <span class="pixel-chain-gem"></span>
+      <% 6.times do %><span class="pixel-chain-link"></span><% end %>
+    </div>
+  </header>
+
+  <%# ── NAV ── %>
+  <nav class="flex justify-center gap-3 mb-6">
+    <%= link_to root_path, class: "tour-scroll tour-scroll-active" do %>
+      <span class="icon-sword"></span> Таблица
+    <% end %>
+  </nav>
+
+  <% if flash[:notice] %>
+    <div class="pixel-alert-success mb-4"><%= flash[:notice] %></div>
+  <% end %>
+
+  <%# ── GALLERY GRID ── %>
+  <div class="gallery-grid">
+    <% @players.each do |player| %>
+      <%= link_to player_path(player), class: "gallery-card" do %>
+        <div class="gallery-card-portrait">
+          <% if player.photo.attached? %>
+            <%= image_tag player.photo_large, alt: player.nickname %>
+          <% else %>
+            <span class="gallery-card-initials"><%= player.initials %></span>
+          <% end %>
+        </div>
+        <div class="gallery-card-info">
+          <div class="gallery-card-name"><%= player.display_name %></div>
+          <div class="gallery-card-nick">&laquo; <%= player.nickname %> &raquo;</div>
+        </div>
+      <% end %>
+    <% end %>
+  </div>
+
+</div>

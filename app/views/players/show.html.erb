@@ -1,0 +1,102 @@
+<div class="max-w-3xl mx-auto px-3 py-6 torch-glow">
+
+  <%# ── Back link ── %>
+  <div class="mb-6">
+    <%= link_to root_path, class: "pixel-back-link" do %>
+      <span class="icon-sword"></span> Назад к таблице
+    <% end %>
+  </div>
+
+  <%# ── Player Card ── %>
+  <div class="pixel-box pixel-box-gold p-6">
+
+    <div class="text-center mb-6">
+      <div class="player-card-avatar">
+        <% if @player.photo.attached? %>
+          <%= image_tag @player.photo_large, alt: @player.nickname %>
+        <% else %>
+          <%= @player.initials %>
+        <% end %>
+      </div>
+      <h1 class="player-card-name"><%= @player.display_name %></h1>
+      <p class="player-card-nick">&laquo; <%= @player.nickname %> &raquo;</p>
+
+      <div class="pixel-chain" style="margin-top: 1.5rem;">
+        <% 6.times do %><span class="pixel-chain-link"></span><% end %>
+        <span class="pixel-chain-gem"></span>
+        <% 6.times do %><span class="pixel-chain-link"></span><% end %>
+      </div>
+    </div>
+
+    <%# ── Stats Summary ── %>
+    <% if @results.any? %>
+      <div class="player-summary-grid">
+        <div class="player-summary-item">
+          <span class="player-summary-value"><%= @results.size %></span>
+          <span class="player-summary-label"><span class="icon-sword"></span> Игры</span>
+        </div>
+        <div class="player-summary-item">
+          <span class="player-summary-value"><%= @results.count { |r| r.place == 1 } %></span>
+          <span class="player-summary-label"><span class="icon-crown"></span> Победы</span>
+        </div>
+        <div class="player-summary-item">
+          <span class="player-summary-value"><%= @results.sum(&:points).to_i %></span>
+          <span class="player-summary-label">Всего очков</span>
+        </div>
+        <div class="player-summary-item">
+          <span class="player-summary-value"><%= @results.sum(&:capitals) %></span>
+          <span class="player-summary-label"><span class="icon-crown"></span> Столицы</span>
+        </div>
+        <div class="player-summary-item">
+          <span class="player-summary-value"><%= @results.sum(&:dragons) %></span>
+          <span class="player-summary-label"><span class="icon-dragon"></span> Драконы</span>
+        </div>
+        <div class="player-summary-item">
+          <span class="player-summary-value"><%= @results.sum(&:castles) %></span>
+          <span class="player-summary-label"><span class="icon-castle"></span> Замки</span>
+        </div>
+      </div>
+
+      <%# ── Game History ── %>
+      <h2 class="player-section-title"><span class="icon-shield"></span> Хроника битв</h2>
+
+      <div class="league-table-wrap">
+        <table class="player-stats-table">
+          <thead>
+            <tr>
+              <th class="text-left">Тур</th>
+              <th class="text-center">Стол</th>
+              <th class="text-center"><span class="icon-shield"></span> Место</th>
+              <th class="text-center">Очки</th>
+              <th class="text-center"><span class="icon-crown"></span></th>
+              <th class="text-center"><span class="icon-dragon"></span></th>
+              <th class="text-center"><span class="icon-castle"></span></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @results.each do |r| %>
+              <tr>
+                <td class="text-left" style="font-family: var(--font-pixel); font-size: 10px;">Тур <%= r.game.tour.number %></td>
+                <td><%= r.game.table_letter %></td>
+                <td>
+                  <% if r.place == 1 %>
+                    <span style="color: var(--gold); font-weight: bold;"><span class="icon-crown"></span><%= r.place %></span>
+                  <% else %>
+                    <%= r.place %>
+                  <% end %>
+                </td>
+                <td style="font-weight: bold; color: var(--gold);"><%= r.points %></td>
+                <td><%= r.capitals %></td>
+                <td><%= r.dragons %></td>
+                <td><%= r.castles %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% else %>
+      <p class="pixel-empty">Этот воин ещё не вступал в битву...</p>
+    <% end %>
+  </div>
+
+</div>

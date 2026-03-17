@@ -1,0 +1,61 @@
+<div class="flex items-center justify-between mb-6">
+  <h1 class="text-2xl font-bold">Тур <%= @tour.number %> — Стол <%= @game.table_letter %></h1>
+  <%= link_to "← Назад", admin_tour_path(@tour), class: "text-gray-500 hover:text-gray-700 text-sm" %>
+</div>
+
+<%= form_with model: @game, url: admin_tour_game_path(@tour, @game), method: :patch, class: "bg-white rounded shadow p-6", data: { controller: "points-calculator" } do |f| %>
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="border-b bg-gray-50">
+        <th class="px-2 py-2 text-left">Игрок</th>
+        <th class="px-2 py-2 text-center">Место</th>
+        <th class="px-2 py-2 text-center">Столицы</th>
+        <th class="px-2 py-2 text-center">Драконы</th>
+        <th class="px-2 py-2 text-center">Замки</th>
+        <th class="px-2 py-2 text-center">Подсказка</th>
+        <th class="px-2 py-2 text-center">Очки</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @game.game_results.each_with_index do |gr, i| %>
+        <tr class="border-b" data-points-calculator-target="row">
+          <%= f.fields_for "game_results_attributes[]", gr, index: i do |grf| %>
+            <%= grf.hidden_field :id if gr.persisted? %>
+            <td class="px-2 py-2">
+              <%= grf.collection_select :player_id, @players, :id, :display_name,
+                  { include_blank: "— выберите —" },
+                  class: "w-full border border-gray-300 rounded px-2 py-1 text-sm" %>
+            </td>
+            <td class="px-2 py-2">
+              <%= grf.number_field :place, min: 1, max: 8, class: "w-16 border border-gray-300 rounded px-2 py-1 text-center",
+                  data: { action: "input->points-calculator#calculate", points_calculator_target: "place" } %>
+            </td>
+            <td class="px-2 py-2">
+              <%= grf.number_field :capitals, min: 0, value: gr.capitals || 0, class: "w-16 border border-gray-300 rounded px-2 py-1 text-center",
+                  data: { action: "input->points-calculator#calculate", points_calculator_target: "capitals" } %>
+            </td>
+            <td class="px-2 py-2">
+              <%= grf.number_field :dragons, min: 0, value: gr.dragons || 0, class: "w-16 border border-gray-300 rounded px-2 py-1 text-center",
+                  data: { action: "input->points-calculator#calculate", points_calculator_target: "dragons" } %>
+            </td>
+            <td class="px-2 py-2">
+              <%= grf.number_field :castles, min: 0, value: gr.castles || 0, class: "w-16 border border-gray-300 rounded px-2 py-1 text-center",
+                  data: { action: "input->points-calculator#calculate", points_calculator_target: "castles" } %>
+            </td>
+            <td class="px-2 py-2 text-center text-gray-400" data-points-calculator-target="suggested">
+              <%= gr.persisted? && gr.place ? gr.suggested_points : "—" %>
+            </td>
+            <td class="px-2 py-2">
+              <%= grf.number_field :points, class: "w-16 border border-gray-300 rounded px-2 py-1 text-center font-bold",
+                  data: { points_calculator_target: "points" } %>
+            </td>
+          <% end %>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+
+  <div class="mt-4">
+    <%= f.submit "Сохранить результаты", class: "bg-gray-900 text-white px-6 py-2 rounded hover:bg-gray-700 cursor-pointer" %>
+  </div>
+<% end %>

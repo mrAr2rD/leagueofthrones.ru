@@ -1,0 +1,38 @@
+<%= form_with model: [:admin, player], class: "space-y-4 max-w-lg" do |f| %>
+  <% if player.errors.any? %>
+    <div class="bg-red-100 border border-red-300 text-red-800 px-4 py-2 rounded">
+      <% player.errors.full_messages.each do |msg| %>
+        <p><%= msg %></p>
+      <% end %>
+    </div>
+  <% end %>
+
+  <div>
+    <%= f.label :first_name, "Имя", class: "block text-sm font-medium text-gray-700 mb-1" %>
+    <%= f.text_field :first_name, class: "w-full border border-gray-300 rounded px-3 py-2" %>
+  </div>
+
+  <div>
+    <%= f.label :last_name, "Фамилия", class: "block text-sm font-medium text-gray-700 mb-1" %>
+    <%= f.text_field :last_name, class: "w-full border border-gray-300 rounded px-3 py-2" %>
+  </div>
+
+  <div>
+    <%= f.label :nickname, "Никнейм", class: "block text-sm font-medium text-gray-700 mb-1" %>
+    <%= f.text_field :nickname, class: "w-full border border-gray-300 rounded px-3 py-2" %>
+  </div>
+
+  <div>
+    <%= f.label :photo, "Фото", class: "block text-sm font-medium text-gray-700 mb-1" %>
+    <%= f.file_field :photo, class: "block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200" %>
+    <% if player.photo.attached? %>
+      <div class="mt-2">
+        <%= image_tag player.photo_thumbnail, class: "w-16 h-16 rounded-full object-cover" %>
+      </div>
+    <% end %>
+  </div>
+
+  <div>
+    <%= f.submit class: "bg-gray-900 text-white px-6 py-2 rounded hover:bg-gray-700 cursor-pointer" %>
+  </div>
+<% end %>

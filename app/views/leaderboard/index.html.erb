@@ -1,0 +1,153 @@
+<%# ═══════════════════════════════════════════
+    MEDIEVAL PIXEL-ART TOURNAMENT LEADERBOARD
+    ═══════════════════════════════════════════ %>
+
+<div class="max-w-5xl mx-auto px-3 py-6 torch-glow" data-controller="row-click">
+
+  <%# ── HEADER ── %>
+  <header class="realm-header">
+    <h1 class="realm-title">
+      <span class="dragon-fire-text">&#x1F525;</span>
+      Игра Престолов
+      <span class="dragon-fire-text">&#x1F525;</span>
+    </h1>
+    <div class="pixel-chain">
+      <% 8.times do %><span class="pixel-chain-link"></span><% end %>
+      <span class="pixel-chain-gem"></span>
+      <% 8.times do %><span class="pixel-chain-link"></span><% end %>
+    </div>
+    <p class="realm-subtitle">Мать драконов</p>
+  </header>
+
+  <%# ── NAV ── %>
+  <nav class="flex justify-center gap-3 mb-6">
+    <%= link_to rules_path, class: "tour-scroll tour-scroll-active" do %>
+      <span class="icon-crown"></span> Правила
+    <% end %>
+    <%= link_to gallery_path, class: "tour-scroll tour-scroll-active" do %>
+      <span class="icon-shield"></span> Галерея
+    <% end %>
+  </nav>
+
+  <%# ── TOUR BADGES ── %>
+  <% if @tours.any? %>
+    <div class="flex justify-center gap-2 mb-6 flex-wrap">
+      <% @tours.each do |tour| %>
+        <span class="tour-scroll <%= 'tour-scroll-active' if tour.played_on %>">
+          <span class="icon-sword"></span>
+          <%= tour.number %><%= " - #{tour.played_on.strftime('%d.%m')}" if tour.played_on %>
+        </span>
+      <% end %>
+    </div>
+  <% end %>
+
+  <%# ── LEAGUE LEGEND ── %>
+  <div class="league-legend" style="margin-top: 0; margin-bottom: 1rem;">
+    <% league_data = { gold: ["#e8b830", "Золотая"], silver: ["#b0b8c8", "Серебряная"], bronze: ["#c87830", "Бронзовая"], iron: ["#5a5a6a", "Железная"] } %>
+    <% league_data.each do |_key, (color, label)| %>
+      <span class="legend-item">
+        <span class="legend-swatch" style="background-color: <%= color %>;"></span>
+        <%= label %> лига
+      </span>
+    <% end %>
+  </div>
+
+  <%# ── CHIBI SCENE — above the table ── %>
+  <div class="chibi-scene">
+    <div class="chibi-ground"></div>
+    <div class="chibi chibi-dragon" title="Дракон"></div>
+    <div class="chibi chibi-knight" title="Рыцарь"></div>
+    <div class="chibi chibi-wolf" title="Лютоволк"></div>
+    <div class="chibi chibi-king" title="Король"></div>
+    <div class="chibi chibi-witch" title="Жрица"></div>
+    <div class="chibi chibi-raven" title="Ворон"></div>
+    <div class="pixel-torch pixel-torch-left"></div>
+    <div class="pixel-torch pixel-torch-right"></div>
+  </div>
+
+  <%# ── MAIN TABLE ── %>
+  <div class="pixel-box pixel-box-gold p-0 overflow-hidden">
+    <div class="league-table-wrap">
+      <table class="league-table">
+        <thead>
+          <tr>
+            <th class="text-left" style="width: 50px;">#</th>
+            <th class="text-left" style="width: 50px;"></th>
+            <th class="text-left">Воин</th>
+            <th class="text-center">Очки</th>
+            <th class="text-center hide-mobile"><span class="icon-sword"></span> Игры</th>
+            <th class="text-center hide-mobile"><span class="icon-crown"></span> Победы</th>
+            <th class="text-center hide-mobile"><span class="icon-crown"></span> Столицы</th>
+            <th class="text-center hide-mobile"><span class="icon-dragon"></span> Драконы</th>
+            <th class="text-center" style="width: 60px;">Судьба</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% prev_league = nil %>
+          <% @rankings.each do |rp| %>
+            <% league_key = rp.league %>
+            <% league = RankingCalculator::LEAGUES[league_key] %>
+
+            <%# League divider %>
+            <% if prev_league && prev_league != league_key %>
+              <tr class="league-divider"><td colspan="9"></td></tr>
+            <% end %>
+            <% prev_league = league_key %>
+
+            <tr class="league-row-<%= league_key %>"
+                data-action="click->row-click#open"
+                data-row-click-url-param="<%= player_path(rp.player) %>">
+
+              <%# Rank %>
+              <td>
+                <span class="rank-num <%= 'rank-crown' if rp.rank <= 3 %>">
+                  <%= rp.rank %>
+                </span>
+              </td>
+
+              <%# Avatar %>
+              <td>
+                <div class="pixel-avatar">
+                  <% if rp.player.photo.attached? %>
+                    <%= image_tag rp.player.photo_thumbnail, alt: rp.player.nickname %>
+                  <% else %>
+                    <%= rp.player.initials %>
+                  <% end %>
+                </div>
+              </td>
+
+              <%# Name %>
+              <td>
+                <div class="player-name"><%= rp.player.display_name %></div>
+                <div class="player-nick"><%= rp.player.nickname %></div>
+              </td>
+
+              <%# Points %>
+              <td class="text-center">
+                <span class="score-points"><%= rp.best6_points %></span>
+              </td>
+
+              <%# Stats %>
+              <td class="stat-cell hide-mobile"><%= rp.games_played %></td>
+              <td class="stat-cell hide-mobile"><%= rp.wins %></td>
+              <td class="stat-cell hide-mobile"><%= rp.capitals %></td>
+              <td class="stat-cell hide-mobile"><%= rp.dragons %></td>
+
+              <%# Rank change %>
+              <td class="text-center">
+                <% if rp.rank_change.nil? || rp.rank_change == 0 %>
+                  <span class="rank-same">- - -</span>
+                <% elsif rp.rank_change > 0 %>
+                  <span class="rank-up">+<%= rp.rank_change %></span>
+                <% else %>
+                  <span class="rank-down"><%= rp.rank_change %></span>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>

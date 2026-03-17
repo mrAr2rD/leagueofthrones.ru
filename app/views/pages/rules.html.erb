@@ -1,0 +1,30 @@
+<div class="max-w-3xl mx-auto px-3 py-6 torch-glow">
+
+  <%# ── Back link ── %>
+  <div class="mb-6">
+    <%= link_to root_path, class: "pixel-back-link" do %>
+      <span class="icon-sword"></span> Назад к таблице
+    <% end %>
+  </div>
+
+  <%# ── Rules Card ── %>
+  <div class="pixel-box pixel-box-gold p-6">
+
+    <div class="text-center mb-6">
+      <h1 class="realm-title" style="font-size: clamp(12px, 2.5vw, 20px);">
+        <span class="icon-crown"></span> <%= @page.title %>
+      </h1>
+      <div class="pixel-chain" style="margin-top: 1rem;">
+        <% 6.times do %><span class="pixel-chain-link"></span><% end %>
+        <span class="pixel-chain-gem"></span>
+        <% 6.times do %><span class="pixel-chain-link"></span><% end %>
+      </div>
+    </div>
+
+    <div class="rules-content">
+      <%= simple_format(@page.content) %>
+    </div>
+
+  </div>
+
+</div>

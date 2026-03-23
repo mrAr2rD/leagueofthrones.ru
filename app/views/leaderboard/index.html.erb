@@ -7,9 +7,9 @@
   <%# ── HEADER ── %>
   <header class="realm-header">
     <h1 class="realm-title" style="display: flex; align-items: center; justify-content: center; gap: 0.5em;">
-      <span class="dragon-fire-text">&#x1F451;</span>
+      <span style="filter: brightness(1.2) saturate(1.5);">&#x1F451;</span>
       Игра Престолов
-      <span class="dragon-fire-text">&#x1F451;</span>
+      <span style="filter: brightness(1.2) saturate(1.5);">&#x1F451;</span>
     </h1>
     <div class="pixel-chain">
       <% 8.times do %><span class="pixel-chain-link"></span><% end %>
@@ -63,13 +63,13 @@
           <tr>
             <th class="text-left" style="width: 50px;">#</th>
             <th class="text-left" style="width: 50px;"></th>
-            <th class="text-left">Воин</th>
+            <th class="text-left">Лорд</th>
             <th class="text-center">Очки</th>
-            <th class="text-center hide-mobile"><span class="icon-sword"></span> Игры</th>
+            <th class="text-center hide-mobile">&#x2694;&#xFE0F; Игры</th>
             <th class="text-center hide-mobile"><span class="icon-crown"></span> Победы</th>
-            <th class="text-center hide-mobile"><span class="icon-crown"></span> Столицы</th>
-            <th class="text-center hide-mobile"><span class="icon-dragon"></span> Драконы</th>
-            <th class="text-center" style="width: 60px;">Судьба</th>
+            <th class="text-center hide-mobile">&#x1F3F0; Захваты</th>
+            <th class="text-center hide-mobile">&#x1F432; Драконы</th>
+            <th class="text-center" style="width: 60px;">Ротация</th>
           </tr>
         </thead>
         <tbody>
@@ -133,6 +133,23 @@
                   <span class="rank-down"><%= rp.rank_change %></span>
                 <% end %>
               </td>
+            </tr>
+          <% end %>
+
+          <%# ── FREE SLOTS in Iron League ── %>
+          <% last_rank = @rankings.any? ? @rankings.last.rank : 0 %>
+          <tr class="league-divider"><td colspan="9"></td></tr>
+          <% 4.times do |i| %>
+            <tr class="league-row-iron">
+              <td><span class="rank-num"><%= last_rank + i + 1 %></span></td>
+              <td><div class="pixel-avatar" style="opacity: 0.4;">?</div></td>
+              <td><div class="player-name" style="opacity: 0.5; font-style: italic;">СВОБОДНО</div></td>
+              <td class="text-center"><span class="score-points">—</span></td>
+              <td class="stat-cell hide-mobile">—</td>
+              <td class="stat-cell hide-mobile">—</td>
+              <td class="stat-cell hide-mobile">—</td>
+              <td class="stat-cell hide-mobile">—</td>
+              <td class="text-center"><span class="rank-same">—</span></td>
             </tr>
           <% end %>
         </tbody>

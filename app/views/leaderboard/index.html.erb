@@ -108,8 +108,8 @@
 
               <%# Name %>
               <td>
-                <div class="player-name"><%= rp.player.display_name %></div>
-                <div class="player-nick"><%= rp.player.nickname %></div>
+                <div class="player-name"><%= rp.player.nickname&.delete_prefix("@") %></div>
+                <div class="player-nick"><%= rp.player.display_name %></div>
               </td>
 
               <%# Points %>

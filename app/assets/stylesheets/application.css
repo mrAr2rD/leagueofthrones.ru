@@ -47,6 +47,10 @@
   image-rendering: pixelated;
 }
 
+html {
+  overflow-x: hidden;
+}
+
 body.pixel-realm {
   background-color: var(--parchment-dark);
   color: var(--ink);
@@ -592,7 +596,7 @@ body.pixel-realm::after {
   gap: 6px;
   font-family: var(--font-pixel);
   font-size: 8px;
-  color: var(--ink-dim);
+  color: #ffffff;
 }
 .legend-swatch {
   width: 12px;

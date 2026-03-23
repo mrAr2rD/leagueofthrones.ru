@@ -6,35 +6,36 @@
 
   <%# ── HEADER ── %>
   <header class="realm-header">
-    <h1 class="realm-title">
-      <span class="dragon-fire-text">&#x1F525;</span>
+    <h1 class="realm-title" style="display: flex; align-items: center; justify-content: center; gap: 0.5em;">
+      <span class="dragon-fire-text">&#x1F451;</span>
       Игра Престолов
-      <span class="dragon-fire-text">&#x1F525;</span>
+      <span class="dragon-fire-text">&#x1F451;</span>
     </h1>
     <div class="pixel-chain">
       <% 8.times do %><span class="pixel-chain-link"></span><% end %>
       <span class="pixel-chain-gem"></span>
       <% 8.times do %><span class="pixel-chain-link"></span><% end %>
     </div>
-    <p class="realm-subtitle">Мать драконов</p>
+    <p class="realm-subtitle">LEAGUE OF THRONES</p>
   </header>
 
   <%# ── NAV ── %>
   <nav class="flex justify-center gap-3 mb-6">
     <%= link_to rules_path, class: "tour-scroll tour-scroll-active" do %>
-      <span class="icon-crown"></span> Правила
+      &#x1F4DC; Правила
     <% end %>
-    <%= link_to gallery_path, class: "tour-scroll tour-scroll-active" do %>
-      <span class="icon-shield"></span> Галерея
-    <% end %>
+    <a href="https://t.me/aesmic" target="_blank" rel="noopener noreferrer" class="tour-scroll tour-scroll-active">
+      &#x270D;&#xFE0F; Записаться
+    </a>
   </nav>
 
   <%# ── TOUR BADGES ── %>
   <% if @tours.any? %>
+    <p class="text-center mb-2" style="color: var(--gold); font-family: var(--font-pixel, monospace); font-size: 0.85rem; letter-spacing: 0.1em;">РАСПИСАНИЕ ТУРОВ</p>
     <div class="flex justify-center gap-2 mb-6 flex-wrap">
       <% @tours.each do |tour| %>
         <span class="tour-scroll <%= 'tour-scroll-active' if tour.played_on %>">
-          <span class="icon-sword"></span>
+          &#x2694;&#xFE0F;
           <%= tour.number %><%= " - #{tour.played_on.strftime('%d.%m')}" if tour.played_on %>
         </span>
       <% end %>
@@ -52,18 +53,7 @@
     <% end %>
   </div>
 
-  <%# ── CHIBI SCENE — above the table ── %>
-  <div class="chibi-scene">
-    <div class="chibi-ground"></div>
-    <div class="chibi chibi-dragon" title="Дракон"></div>
-    <div class="chibi chibi-knight" title="Рыцарь"></div>
-    <div class="chibi chibi-wolf" title="Лютоволк"></div>
-    <div class="chibi chibi-king" title="Король"></div>
-    <div class="chibi chibi-witch" title="Жрица"></div>
-    <div class="chibi chibi-raven" title="Ворон"></div>
-    <div class="pixel-torch pixel-torch-left"></div>
-    <div class="pixel-torch pixel-torch-right"></div>
-  </div>
+  <%# CHIBI SCENE removed %>
 
   <%# ── MAIN TABLE ── %>
   <div class="pixel-box pixel-box-gold p-0 overflow-hidden">

@@ -27,9 +27,8 @@ class RankingCalculator
 
   def call
     players = Player.includes(game_results: { game: :tour }).all
-    @last_tour = Tour.joins(games: :game_results)
-                     .where.not(game_results: { points: nil })
-                     .order(number: :desc).first
+    @played_tour_ids = Tour.played.pluck(:id).to_set
+    @last_tour = Tour.played.order(number: :desc).first
     ranked = players.map { |player| build_ranking(player) }
 
     ranked.sort_by! { |rp| [ -rp.best6_points, -rp.wins, -rp.capitals, -rp.dragons ] }
@@ -46,7 +45,7 @@ class RankingCalculator
   private
 
   def build_ranking(player)
-    results = player.game_results.select { |gr| gr.points.present? }
+    results = player.game_results.select { |gr| gr.points.present? && @played_tour_ids.include?(gr.game.tour_id) }
     points_list = results.map(&:points).sort.reverse
     best6 = points_list.first(6).sum
 

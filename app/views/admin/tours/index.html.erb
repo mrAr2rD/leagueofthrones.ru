@@ -8,8 +8,12 @@
         <p class="text-sm text-gray-500 mt-1">
           <%= tour.played_on ? tour.played_on.strftime("%d.%m.%Y") : "Дата не назначена" %>
         </p>
-        <p class="text-sm text-gray-400 mt-1">
-          <%= tour.games.flat_map(&:game_results).count { |gr| gr.points.present? } %> результатов
+        <p class="text-sm mt-1">
+          <% if tour.played? %>
+            <span class="text-green-600 font-medium">Сыграно</span>
+          <% else %>
+            <span class="text-gray-400">Не сыграно</span>
+          <% end %>
         </p>
       <% end %>
       <div class="mt-2">

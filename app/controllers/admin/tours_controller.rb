@@ -28,7 +28,7 @@ module Admin
     end
 
     def tour_params
-      params.expect(tour: [ :number, :played_on ])
+      params.expect(tour: [ :number, :played_on, :played ])
     end
   end
 end

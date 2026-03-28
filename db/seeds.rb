@@ -151,6 +151,7 @@ puts "#{players.size} players created"
 tours = (1..8).map do |n|
   Tour.find_or_create_by!(number: n) do |t|
     t.played_on = n <= 3 ? Date.new(2026, 1, n * 7) : nil
+    t.played = n <= 3
   end
 end
 puts "#{tours.size} tours created"

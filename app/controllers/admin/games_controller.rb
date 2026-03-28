@@ -12,7 +12,8 @@ module Admin
       RankingCalculator.recalculate!
       redirect_to admin_tour_path(@tour), notice: "Результаты сохранены"
     rescue ActiveRecord::RecordInvalid => e
-      flash.now[:alert] = "Ошибка: #{e.message}"
+      messages = e.record.errors.map(&:message).presence || [ e.message ]
+      flash.now[:alert] = "Ошибка: #{messages.join(', ')}"
       ensure_result_slots
       render :edit, status: :unprocessable_entity
     end
@@ -28,11 +29,27 @@ module Admin
       @players = Player.order(:last_name, :first_name, :nickname)
       @player_options = @players.map { |player| [ player.admin_option_label, player.id ] }
       @house_options = GameResult.house_options
+      @player_house_options = build_player_house_options
     end
 
     def ensure_result_slots
       existing = @game.game_results.size
       (8 - existing).times { @game.game_results.build }
+    end
+
+    def build_player_house_options
+      historical_houses = GameResult.where(player_id: @players.map(&:id))
+                                    .where.not(game_id: @game.id)
+                                    .where.not(house: nil)
+                                    .pluck(:player_id, :house)
+
+      used_houses_by_player = historical_houses.each_with_object(Hash.new { |hash, key| hash[key] = [] }) do |(player_id, house), hash|
+        hash[player_id] << house
+      end
+
+      @players.each_with_object({}) do |player, options|
+        options[player.id.to_s] = GameResult.house_options_for(used_houses: used_houses_by_player[player.id])
+      end
     end
 
     def save_results

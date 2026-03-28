@@ -3,7 +3,15 @@
   <%= link_to "← Назад", admin_tour_path(@tour), class: "text-sm text-gray-500 hover:text-gray-700" %>
 </div>
 
-<%= form_with model: @game, url: admin_tour_game_path(@tour, @game), method: :patch, class: "overflow-hidden rounded-lg bg-white shadow", data: { controller: "points-calculator slot-toggle" } do |f| %>
+<%= form_with model: @game,
+    url: admin_tour_game_path(@tour, @game),
+    method: :patch,
+    class: "overflow-hidden rounded-lg bg-white shadow",
+    data: {
+      controller: "points-calculator slot-toggle",
+      slot_toggle_all_house_options_value: @house_options.to_json,
+      slot_toggle_player_house_options_value: @player_house_options.to_json
+    } do |f| %>
   <div class="hidden border-b bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-700 lg:grid lg:grid-cols-[minmax(12rem,1.8fr)_minmax(10rem,1.3fr)_5rem_5rem_5rem_5rem_6rem_5rem] lg:gap-3">
     <div>Игрок</div>
     <div>Дом</div>
@@ -18,6 +26,12 @@
   <div class="divide-y divide-gray-200">
     <% @game.game_results.each_with_index do |gr, i| %>
       <%= f.fields_for "game_results_attributes[]", gr, index: i do |grf| %>
+        <% row_house_options = gr.player_id.present? ? @player_house_options.fetch(gr.player_id.to_s, @house_options) : @house_options %>
+        <% house_hint = if gr.player_id.present?
+             row_house_options.any? ? "Можно выбрать: #{row_house_options.map(&:first).join(', ')}" : "У этого игрока не осталось свободных домов"
+           else
+             "Сначала выберите игрока"
+           end %>
         <div class="<%= 'bg-gray-50 opacity-50' unless gr.player_id.present? %> p-4" data-points-calculator-target="row" data-slot-toggle-target="row">
           <%= grf.hidden_field :id if gr.persisted? %>
 
@@ -28,15 +42,18 @@
                   options_for_select(@player_options, gr.player_id),
                   { include_blank: "— свободный слот —" },
                   class: "w-full min-w-0 rounded border border-gray-300 px-3 py-2 text-sm",
-                  data: { action: "change->slot-toggle#toggle", slot_toggle_target: "select" } %>
+                  data: { action: "change->slot-toggle#refresh", slot_toggle_target: "playerSelect" } %>
             </div>
 
             <div class="col-span-2 lg:col-span-1">
               <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500 lg:hidden">Дом</label>
               <%= grf.select :house,
-                  options_for_select(@house_options, gr.house),
-                  { include_blank: "— дом —" },
-                  class: "w-full min-w-0 rounded border border-gray-300 px-3 py-2 text-sm" %>
+                  options_for_select(row_house_options, gr.house),
+                  { include_blank: (gr.player_id.present? ? false : "— дом —") },
+                  class: "w-full min-w-0 rounded border border-gray-300 px-3 py-2 text-sm disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400",
+                  disabled: gr.player_id.blank?,
+                  data: { action: "change->slot-toggle#refresh", slot_toggle_target: "houseSelect" } %>
+              <p class="mt-1 text-xs text-gray-500" data-slot-toggle-target="houseHint"><%= house_hint %></p>
             </div>
 
             <div>

@@ -20,11 +20,27 @@ class GameResult < ApplicationRecord
   validates :points, numericality: { only_integer: true }, allow_nil: true
   validates :capitals, :dragons, :castles,
             numericality: { greater_than_or_equal_to: 0, only_integer: true }, allow_nil: true
-  validates :house, inclusion: { in: HOUSE_LABELS.keys }, allow_nil: true
+  validates :house,
+            presence: { message: "должен быть выбран для занятого слота" },
+            if: :player_id?
+  validates :house,
+            inclusion: { in: HOUSE_LABELS.keys, message: "выбран некорректно" },
+            allow_blank: true
+  validates :house,
+            uniqueness: { scope: :game_id, message: "уже выбран за этим столом" },
+            allow_blank: true
+  validates :house,
+            uniqueness: { scope: :player_id, message: "уже использовался этим игроком" },
+            allow_blank: true
   validates :player_id, uniqueness: { scope: :game_id }
 
   def self.house_options
     HOUSE_OPTIONS
+  end
+
+  def self.house_options_for(used_houses: [])
+    used_houses = Array(used_houses)
+    HOUSE_OPTIONS.reject { |(_label, key)| used_houses.include?(key) }
   end
 
   def suggested_points

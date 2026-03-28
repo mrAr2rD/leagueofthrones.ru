@@ -28,6 +28,24 @@ class GameResultTest < ActiveSupport::TestCase
     assert_not gr.valid?
   end
 
+  test "house is required for occupied result" do
+    gr = GameResult.new(game: games(:game_1b), player: players(:jon), place: 2, points: 11)
+    assert_not gr.valid?
+    assert_includes gr.errors[:house], "должен быть выбран для занятого слота"
+  end
+
+  test "house must be unique within one game" do
+    gr = GameResult.new(game: games(:game_1a), player: players(:cersei), house: "stark", place: 3, points: 10)
+    assert_not gr.valid?
+    assert_includes gr.errors[:house], "уже выбран за этим столом"
+  end
+
+  test "player cannot reuse the same house in another game" do
+    gr = GameResult.new(game: games(:game_1b), player: players(:daenerys), house: "stark", place: 2, points: 12)
+    assert_not gr.valid?
+    assert_includes gr.errors[:house], "уже использовался этим игроком"
+  end
+
   test "house_name returns russian label" do
     assert_equal "Старк", game_results(:daenerys_game1).house_name
   end

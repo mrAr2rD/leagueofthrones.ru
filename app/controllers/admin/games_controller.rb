@@ -31,12 +31,16 @@ module Admin
     end
 
     def save_results
-      results_params = params.expect(game: { game_results_attributes: [
-        [ :id, :player_id, :place, :points, :capitals, :dragons, :castles, :_destroy ]
-      ] })
+      raw = params[:game][:game_results_attributes]
+      return if raw.blank?
+
+      # Normalize nested hash structure into flat array of attribute hashes
+      rows = raw.values.map { |v| v.is_a?(Hash) && v.values.first.is_a?(Hash) ? v.values.first : v }
+      allowed = %w[id player_id place points capitals dragons castles]
 
       GameResult.transaction do
-        results_params[:game_results_attributes].each do |attrs|
+        rows.each do |attrs|
+          attrs = attrs.permit(*allowed)
           existing = attrs[:id].present? ? @game.game_results.find_by(id: attrs[:id]) : nil
 
           if attrs[:player_id].blank?
@@ -44,7 +48,7 @@ module Admin
             next
           end
 
-          clean = attrs.except(:id, :_destroy).transform_values { |v| v.presence }
+          clean = attrs.to_h.except("id").transform_values { |v| v.presence }
 
           if existing
             existing.update!(clean)

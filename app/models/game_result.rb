@@ -26,13 +26,10 @@ class GameResult < ApplicationRecord
   validates :house,
             inclusion: { in: HOUSE_LABELS.keys, message: "выбран некорректно" },
             allow_blank: true
-  validates :house,
-            uniqueness: { scope: :game_id, message: "уже выбран за этим столом" },
-            allow_blank: true
-  validates :house,
-            uniqueness: { scope: :player_id, message: "уже использовался этим игроком" },
-            allow_blank: true
-  validates :player_id, uniqueness: { scope: :game_id }
+  validate :player_unique_within_game
+  validate :player_unique_within_tour
+  validate :house_unique_within_game
+  validate :house_unique_for_player
 
   def self.house_options
     HOUSE_OPTIONS
@@ -52,5 +49,65 @@ class GameResult < ApplicationRecord
 
   def house_name
     HOUSE_LABELS[house]
+  end
+
+  private
+
+  def player_unique_within_game
+    return unless player_id? && game_id?
+    return unless sibling_results.any? { |result| result.player_id == player_id }
+
+    errors.add(:player_id, "уже выбран за этим столом")
+  end
+
+  def player_unique_within_tour
+    return unless player_id? && game&.tour_id
+
+    duplicate_in_other_games = GameResult.joins(:game)
+                                         .where(player_id: player_id, games: { tour_id: game.tour_id })
+                                         .where.not(game_id: game_id)
+                                         .where.not(id: id)
+                                         .exists?
+    return unless duplicate_in_other_games
+
+    errors.add(:player_id, "уже выбран за другим столом этого тура")
+  end
+
+  def house_unique_within_game
+    return if house.blank? || game_id.blank?
+    return unless sibling_results.any? { |result| result.house == house }
+
+    errors.add(:house, "уже выбран за этим столом")
+  end
+
+  def house_unique_for_player
+    return if house.blank? || player_id.blank?
+
+    duplicate_in_current_game = sibling_results.any? do |result|
+      result.player_id == player_id && result.house == house
+    end
+    duplicate_in_other_games = GameResult.where(player_id: player_id, house: house)
+                                         .where.not(game_id: game_id)
+                                         .where.not(id: id)
+                                         .exists?
+    return unless duplicate_in_current_game || duplicate_in_other_games
+
+    errors.add(:house, "уже использовался этим игроком")
+  end
+
+  def sibling_results
+    return [] unless game_id?
+
+    if game&.association(:game_results)&.loaded?
+      game.game_results.reject { |result| same_result?(result) }
+    else
+      GameResult.where(game_id: game_id).where.not(id: id)
+    end
+  end
+
+  def same_result?(result)
+    return result.equal?(self) unless persisted? && result.persisted?
+
+    result.id == id
   end
 end

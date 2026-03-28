@@ -1,8 +1,10 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["row", "playerSelect", "houseSelect", "houseHint"]
+  static targets = ["row", "playerSelect", "houseSelect", "houseHint", "formError"]
   static values = {
+    allPlayerOptions: Array,
+    blockedPlayerIds: Array,
     allHouseOptions: Array,
     playerHouseOptions: Object
   }
@@ -17,6 +19,10 @@ export default class extends Controller {
 
   refresh() {
     this.rowTargets.forEach((row) => this.syncRow(row))
+
+    if (this.incompleteRows().length === 0) {
+      this.hideFormError()
+    }
   }
 
   syncRow(row) {
@@ -25,6 +31,8 @@ export default class extends Controller {
     const houseHint = row.querySelector("[data-slot-toggle-target='houseHint']")
 
     if (!playerSelect || !houseSelect) return
+
+    this.syncPlayerSelect(playerSelect)
 
     const empty = playerSelect.value === ""
     const selectedHouse = houseSelect.value
@@ -62,8 +70,7 @@ export default class extends Controller {
     if (availableOptions.length === 0) {
       this.populateHouseSelect(houseSelect, [], "", {
         includeBlank: true,
-        blankLabel: "— свободных домов нет —",
-        disabled: true
+        disabled: false
       })
 
       if (houseHint) {
@@ -73,16 +80,83 @@ export default class extends Controller {
       return
     }
 
-    const nextValue = availableOptions.some(([, houseKey]) => houseKey === selectedHouse) ? selectedHouse : availableOptions[0][1]
+    const nextValue = availableOptions.some(([, houseKey]) => houseKey === selectedHouse) ? selectedHouse : ""
 
     this.populateHouseSelect(houseSelect, availableOptions, nextValue, {
-      includeBlank: false,
+      includeBlank: true,
       disabled: false
     })
 
     if (houseHint) {
       houseHint.textContent = `Можно выбрать: ${availableOptions.map(([label]) => label).join(", ")}`
     }
+  }
+
+  syncPlayerSelect(playerSelect) {
+    const selectedPlayer = playerSelect.value
+    const blockedPlayers = new Set(this.blockedPlayerIdsValue.map(String))
+    const takenPlayers = new Set(
+      this.playerSelectTargets
+        .filter((select) => select !== playerSelect)
+        .map((select) => select.value)
+        .filter(Boolean)
+    )
+    const availableOptions = this.allPlayerOptionsValue.filter(([, playerId]) => {
+      const playerKey = String(playerId)
+
+      return (!blockedPlayers.has(playerKey) || playerKey === selectedPlayer) &&
+        (!takenPlayers.has(playerKey) || playerKey === selectedPlayer)
+    })
+
+    this.populatePlayerSelect(playerSelect, availableOptions, selectedPlayer)
+  }
+
+  populatePlayerSelect(select, options, value) {
+    select.innerHTML = ""
+
+    const blankOption = document.createElement("option")
+    blankOption.value = ""
+    blankOption.textContent = "— свободный слот —"
+    select.append(blankOption)
+
+    options.forEach(([label, playerId]) => {
+      const option = document.createElement("option")
+      option.value = playerId
+      option.textContent = label
+      select.append(option)
+    })
+
+    select.value = value || ""
+  }
+
+  validateBeforeSubmit(event) {
+    const incompleteRows = this.incompleteRows()
+    if (incompleteRows.length === 0) {
+      this.hideFormError()
+      return
+    }
+
+    event.preventDefault()
+    this.showFormError("Заполните игрока и дом в каждой занятой строке или очистите строку целиком.")
+
+    const row = incompleteRows[0]
+    const playerSelect = row.querySelector("[data-slot-toggle-target='playerSelect']")
+    const houseSelect = row.querySelector("[data-slot-toggle-target='houseSelect']")
+    const focusTarget = playerSelect?.value ? houseSelect : playerSelect
+    focusTarget?.focus()
+  }
+
+  incompleteRows() {
+    return this.rowTargets.filter((row) => {
+      const playerSelect = row.querySelector("[data-slot-toggle-target='playerSelect']")
+      const houseSelect = row.querySelector("[data-slot-toggle-target='houseSelect']")
+      if (!playerSelect || !houseSelect) return false
+
+      const playerFilled = playerSelect.value !== ""
+      const houseFilled = houseSelect.value !== ""
+
+      return playerFilled !== houseFilled
+    })
   }
 
   populateHouseSelect(select, options, value, { includeBlank, blankLabel = "— дом —", disabled = false }) {
@@ -104,13 +178,23 @@ export default class extends Controller {
 
     select.disabled = disabled
     select.value = value || ""
-
-    if (!includeBlank && !select.value && options.length > 0) {
-      select.value = options[0][1]
-    }
   }
 
   findHouseOption(houseKey) {
     return this.allHouseOptionsValue.find(([, key]) => key === houseKey) || [houseKey, houseKey]
+  }
+
+  showFormError(message) {
+    if (!this.hasFormErrorTarget) return
+
+    this.formErrorTarget.textContent = message
+    this.formErrorTarget.classList.remove("hidden")
+  }
+
+  hideFormError() {
+    if (!this.hasFormErrorTarget) return
+
+    this.formErrorTarget.textContent = ""
+    this.formErrorTarget.classList.add("hidden")
   }
 }

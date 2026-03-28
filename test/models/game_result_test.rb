@@ -40,6 +40,18 @@ class GameResultTest < ActiveSupport::TestCase
     assert_includes gr.errors[:house], "уже выбран за этим столом"
   end
 
+  test "player must be unique within one game" do
+    gr = GameResult.new(game: games(:game_1a), player: players(:daenerys), house: "arryn", place: 3, points: 10)
+    assert_not gr.valid?
+    assert_includes gr.errors[:player_id], "уже выбран за этим столом"
+  end
+
+  test "player must be unique within one tour" do
+    gr = GameResult.new(game: games(:game_1b), player: players(:daenerys), house: "arryn", place: 2, points: 12)
+    assert_not gr.valid?
+    assert_includes gr.errors[:player_id], "уже выбран за другим столом этого тура"
+  end
+
   test "player cannot reuse the same house in another game" do
     gr = GameResult.new(game: games(:game_1b), player: players(:daenerys), house: "stark", place: 2, points: 12)
     assert_not gr.valid?

@@ -1,9 +1,9 @@
 module Admin
   class GamesController < BaseController
     before_action :set_tour_and_game
+    before_action :load_form_options, only: [ :edit, :update ]
 
     def edit
-      @players = Player.order(:last_name)
       ensure_result_slots
     end
 
@@ -12,7 +12,6 @@ module Admin
       RankingCalculator.recalculate!
       redirect_to admin_tour_path(@tour), notice: "Результаты сохранены"
     rescue ActiveRecord::RecordInvalid => e
-      @players = Player.order(:last_name)
       flash.now[:alert] = "Ошибка: #{e.message}"
       ensure_result_slots
       render :edit, status: :unprocessable_entity
@@ -25,6 +24,12 @@ module Admin
       @game = @tour.games.find(params[:id])
     end
 
+    def load_form_options
+      @players = Player.order(:last_name, :first_name, :nickname)
+      @player_options = @players.map { |player| [ player.admin_option_label, player.id ] }
+      @house_options = GameResult.house_options
+    end
+
     def ensure_result_slots
       existing = @game.game_results.size
       (8 - existing).times { @game.game_results.build }
@@ -34,11 +39,11 @@ module Admin
       raw = params[:game][:game_results_attributes]
       return if raw.blank?
 
-      allowed = %w[id player_id place points capitals dragons castles]
+      allowed = %w[id player_id house place points capitals dragons castles]
 
-      # Unwrap double-nested params: {"29"=>{"0"=>{"id"=>"29",...}}} → {"id"=>"29",...}
-      rows = raw.values.map do |v|
-        inner = v.respond_to?(:values) && v.values.first.respond_to?(:permit) ? v.values.first : v
+      # Unwrap double-nested params: {"29"=>{"0"=>{"id"=>"29",...}}} -> {"id"=>"29",...}
+      rows = raw.values.map do |value|
+        inner = value.respond_to?(:values) && value.values.first.respond_to?(:permit) ? value.values.first : value
         inner.permit(*allowed)
       end
 

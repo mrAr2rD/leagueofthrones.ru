@@ -5,7 +5,9 @@ export default class extends Controller {
 
   toggle(event) {
     const select = event.target
-    const row = select.closest("tr")
+    const row = select.closest("[data-slot-toggle-target='row']")
+    if (!row) return
+
     const empty = select.value === ""
 
     row.classList.toggle("bg-gray-50", empty)

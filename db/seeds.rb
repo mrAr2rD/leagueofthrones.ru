@@ -175,6 +175,7 @@ shuffled_players = players.shuffle(random: rng)
   tour.games.ordered.each_with_index do |game, table_idx|
     table_players = tour_players[table_idx * 7, 7]
     next unless table_players&.size == 7
+    house_keys = GameResult::HOUSE_LABELS.keys.shuffle(random: rng)
 
     table_players.each_with_index do |player, place_idx|
       place = place_idx + 1
@@ -187,6 +188,7 @@ shuffled_players = players.shuffle(random: rng)
       gr.capitals = capitals
       gr.dragons = dragons
       gr.castles = castles
+      gr.house = house_keys[place_idx]
       gr.points = GameResult::PLACE_POINTS.fetch(place, 0) + (capitals * 2) + dragons + castles
       gr.save!
     end

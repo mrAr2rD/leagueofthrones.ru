@@ -30,6 +30,10 @@ class PlayerTest < ActiveSupport::TestCase
     assert_equal "Иван Иванов", player.display_name
   end
 
+  test "admin option label includes nickname" do
+    assert_equal "Семён (@samzakharov)", players(:daenerys).admin_option_label
+  end
+
   test "initials without last_name" do
     assert_equal "С", players(:daenerys).initials
   end

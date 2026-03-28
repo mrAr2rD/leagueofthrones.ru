@@ -2,6 +2,9 @@
 
 # If running the rails server then create or migrate existing database
 if [ "${@: -2:1}" == "./bin/rails" ] && [ "${@: -1:1}" == "server" ]; then
+  # Ensure storage directory exists and is writable
+  mkdir -p /rails/storage
+
   ./bin/rails db:prepare
 
   # Load Solid Queue/Cache/Cable schemas into primary database if tables don't exist
@@ -16,6 +19,9 @@ if [ "${@: -2:1}" == "./bin/rails" ] && [ "${@: -1:1}" == "server" ]; then
       load Rails.root.join('db/cable_schema.rb')
     end
   "
+
+  # Purge orphaned Active Storage blobs (files missing from disk)
+  ./bin/rails storage:purge_orphaned
 fi
 
 exec "${@}"

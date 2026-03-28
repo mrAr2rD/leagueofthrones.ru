@@ -1,27 +1,31 @@
 #!/bin/bash -e
 
+# Fix volume permissions (entrypoint runs as root)
+if [ -d /rails/storage ]; then
+  chown -R rails:rails /rails/storage
+fi
+mkdir -p /rails/storage && chown rails:rails /rails/storage
+
 # If running the rails server then create or migrate existing database
 if [ "${@: -2:1}" == "./bin/rails" ] && [ "${@: -1:1}" == "server" ]; then
-  # Ensure storage directory exists and is writable
-  mkdir -p /rails/storage
-
-  ./bin/rails db:prepare
+  su rails -c "./bin/rails db:prepare"
 
   # Load Solid Queue/Cache/Cable schemas into primary database if tables don't exist
-  ./bin/rails runner "
-    unless ActiveRecord::Base.connection.table_exists?('solid_queue_jobs')
-      load Rails.root.join('db/queue_schema.rb')
+  su rails -c './bin/rails runner "
+    unless ActiveRecord::Base.connection.table_exists?(\"solid_queue_jobs\")
+      load Rails.root.join(\"db/queue_schema.rb\")
     end
-    unless ActiveRecord::Base.connection.table_exists?('solid_cache_entries')
-      load Rails.root.join('db/cache_schema.rb')
+    unless ActiveRecord::Base.connection.table_exists?(\"solid_cache_entries\")
+      load Rails.root.join(\"db/cache_schema.rb\")
     end
-    unless ActiveRecord::Base.connection.table_exists?('solid_cable_messages')
-      load Rails.root.join('db/cable_schema.rb')
+    unless ActiveRecord::Base.connection.table_exists?(\"solid_cable_messages\")
+      load Rails.root.join(\"db/cable_schema.rb\")
     end
-  "
+  "'
 
   # Purge orphaned Active Storage blobs (files missing from disk)
-  ./bin/rails storage:purge_orphaned
+  su rails -c "./bin/rails storage:purge_orphaned"
 fi
 
-exec "${@}"
+# Drop to rails user for the main process
+exec su rails -c "$(printf '%q ' "$@")"

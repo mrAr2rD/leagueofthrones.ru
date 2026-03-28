@@ -69,10 +69,11 @@ RUN groupadd --system --gid 1000 rails && \
 COPY --chown=rails:rails --from=build "${BUNDLE_PATH}" "${BUNDLE_PATH}"
 COPY --chown=rails:rails --from=build /rails /rails
 
-# Ensure storage directory exists with correct ownership before volume mount
+# Ensure storage directory exists with correct ownership
 RUN mkdir -p /rails/storage && chown -R rails:rails /rails/storage
 
-USER 1000:1000
+# Entrypoint runs as root to fix volume permissions, then drops to rails user
+# USER 1000:1000 is set inside docker-entrypoint after chown
 
 # Entrypoint prepares the database.
 ENTRYPOINT ["/rails/bin/docker-entrypoint"]

@@ -1,24 +1,156 @@
-# README
+# League of Thrones
 
-This README would normally document whatever steps are necessary to get the
-application up and running.
+League of Thrones is a Rails application for running and publishing a tournament:
+- public leaderboard and player pages
+- rules page
+- gallery login/page
+- admin panel for players, tours and game results
 
-Things you may want to cover:
+## Stack
+- Ruby 3.3.6
+- Rails 8.1
+- PostgreSQL
+- Importmap
+- Turbo + Stimulus
+- Tailwind CSS
+- Minitest
 
-* Ruby version
+## Main Project Areas
+- [`config/routes.rb`](config/routes.rb) defines the public and admin entry points.
+- [`app/models`](app/models) contains tournament entities and validation rules.
+- [`app/controllers/admin`](app/controllers/admin) contains the admin workflows.
+- [`app/views/admin`](app/views/admin) contains admin templates.
+- [`app/javascript/controllers`](app/javascript/controllers) contains Stimulus behavior for interactive forms.
+- [`app/services/ranking_calculator.rb`](app/services/ranking_calculator.rb) recalculates standings.
+- [`db/seeds.rb`](db/seeds.rb) creates a realistic local dataset.
+- [`test`](test) contains the Minitest suite and fixtures.
 
-* System dependencies
+## Quick Start
+### 1. Install dependencies
+- Ruby `3.3.6`
+- Bundler
+- PostgreSQL 16+ recommended
 
-* Configuration
+### 2. Start PostgreSQL
+If you already have local PostgreSQL running, move to the next step.
 
-* Database creation
+If not, a simple disposable local instance:
 
-* Database initialization
+```bash
+docker run --name lot-postgres \
+  -e POSTGRES_HOST_AUTH_METHOD=trust \
+  -e POSTGRES_USER=$(whoami) \
+  -e POSTGRES_DB=postgres \
+  -p 5432:5432 \
+  -d postgres:16
+```
 
-* How to run the test suite
+The default development config in [`config/database.yml`](config/database.yml) expects PostgreSQL to accept the current OS user unless you override it with `DATABASE_URL` or `PG*` environment variables.
 
-* Services (job queues, cache servers, search engines, etc.)
+### 3. Bootstrap the app
+```bash
+bin/setup --skip-server
+```
 
-* Deployment instructions
+This will:
+- install gems
+- prepare the database
+- clear old logs and temp files
 
-* ...
+### 4. Start the app
+```bash
+bin/dev
+```
+
+This starts:
+- Rails server
+- Tailwind watcher
+
+Then open [http://127.0.0.1:3000](http://127.0.0.1:3000).
+
+## Seed Data
+The seed script creates:
+- admin user
+- tournament rules page
+- 28 players
+- 8 tours
+- 4 games per tour (`A` to `D`)
+- demo game results for the first tours
+
+Run:
+
+```bash
+bin/rails db:seed:replant
+```
+
+Admin login page:
+- [http://127.0.0.1:3000/admin/login](http://127.0.0.1:3000/admin/login)
+
+## Test Commands
+Run the full test suite:
+
+```bash
+bin/rails test
+```
+
+Run a single test file:
+
+```bash
+bin/rails test test/controllers/admin/games_controller_test.rb
+```
+
+Run the local CI-style pipeline:
+
+```bash
+bin/ci
+```
+
+`bin/ci` runs:
+- setup
+- RuboCop
+- bundler-audit
+- importmap audit
+- Brakeman
+- Rails tests
+- seed replant check in test env
+
+## Most Frequent Change Areas
+### Admin game result editor
+If you change result editing behavior, check these files together:
+- [`app/views/admin/games/edit.html.erb`](app/views/admin/games/edit.html.erb)
+- [`app/javascript/controllers/slot_toggle_controller.js`](app/javascript/controllers/slot_toggle_controller.js)
+- [`app/controllers/admin/games_controller.rb`](app/controllers/admin/games_controller.rb)
+- [`app/models/game_result.rb`](app/models/game_result.rb)
+- [`app/services/ranking_calculator.rb`](app/services/ranking_calculator.rb)
+
+Relevant tests:
+- [`test/controllers/admin/games_controller_test.rb`](test/controllers/admin/games_controller_test.rb)
+- [`test/models/game_result_test.rb`](test/models/game_result_test.rb)
+- [`test/models/player_test.rb`](test/models/player_test.rb)
+
+### Public leaderboard
+- [`app/controllers/leaderboard_controller.rb`](app/controllers/leaderboard_controller.rb)
+- [`app/services/ranking_calculator.rb`](app/services/ranking_calculator.rb)
+- [`test/controllers/leaderboard_controller_test.rb`](test/controllers/leaderboard_controller_test.rb)
+
+### Player management
+- [`app/controllers/admin/players_controller.rb`](app/controllers/admin/players_controller.rb)
+- [`app/views/admin/players`](app/views/admin/players)
+- [`app/models/player.rb`](app/models/player.rb)
+
+## Domain Notes
+- A player can appear only once per table.
+- A player can appear only once per tour, even across different tables.
+- Houses must be unique within a game.
+- A player cannot reuse the same house across games.
+- Rankings are recalculated after result updates.
+- `place` may be empty for draft table assignments.
+
+## Useful URLs
+- Public leaderboard: [http://127.0.0.1:3000/](http://127.0.0.1:3000/)
+- Rules page: [http://127.0.0.1:3000/rules](http://127.0.0.1:3000/rules)
+- Gallery login: [http://127.0.0.1:3000/gallery/login](http://127.0.0.1:3000/gallery/login)
+- Admin root: [http://127.0.0.1:3000/admin](http://127.0.0.1:3000/admin)
+
+## Notes For AI Agents
+You can keep a local-only `AGENTS.md` in the repo root as the fastest project entry point for coding agents working on this checkout.

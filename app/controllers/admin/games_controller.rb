@@ -34,13 +34,16 @@ module Admin
       raw = params[:game][:game_results_attributes]
       return if raw.blank?
 
-      # Normalize nested hash structure into flat array of attribute hashes
-      rows = raw.values.map { |v| v.is_a?(Hash) && v.values.first.is_a?(Hash) ? v.values.first : v }
       allowed = %w[id player_id place points capitals dragons castles]
+
+      # Unwrap double-nested params: {"29"=>{"0"=>{"id"=>"29",...}}} → {"id"=>"29",...}
+      rows = raw.values.map do |v|
+        inner = v.respond_to?(:values) && v.values.first.respond_to?(:permit) ? v.values.first : v
+        inner.permit(*allowed)
+      end
 
       GameResult.transaction do
         rows.each do |attrs|
-          attrs = attrs.permit(*allowed)
           existing = attrs[:id].present? ? @game.game_results.find_by(id: attrs[:id]) : nil
 
           if attrs[:player_id].blank?

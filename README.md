@@ -72,7 +72,7 @@ Then open [http://127.0.0.1:3000](http://127.0.0.1:3000).
 The seed script creates:
 - admin user
 - tournament rules page
-- 28 players
+- 32 players
 - 8 tours
 - 4 games per tour (`A` to `D`)
 - demo game results for the first tours

@@ -15,7 +15,7 @@
       slot_toggle_all_house_options_value: @house_options.to_json,
       slot_toggle_player_house_options_value: @player_house_options.to_json
     } do |f| %>
-  <div class="hidden border-b bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-700 lg:grid lg:grid-cols-[minmax(12rem,1.8fr)_minmax(10rem,1.3fr)_5rem_5rem_5rem_5rem_6rem_5rem] lg:gap-3">
+  <div class="hidden border-b bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-700 lg:grid lg:grid-cols-[minmax(12rem,1.8fr)_minmax(10rem,1.3fr)_repeat(6,5.5rem)] lg:items-center lg:gap-3">
     <div>Игрок</div>
     <div>Дом</div>
     <div class="text-center">Место</div>
@@ -39,13 +39,13 @@
         <div class="<%= 'bg-gray-50 opacity-50' unless gr.player_id.present? %> p-4" data-points-calculator-target="row" data-slot-toggle-target="row">
           <%= grf.hidden_field :id if gr.persisted? %>
 
-          <div class="grid grid-cols-2 gap-3 lg:grid-cols-[minmax(12rem,1.8fr)_minmax(10rem,1.3fr)_5rem_5rem_5rem_5rem_6rem_5rem] lg:items-start">
+          <div class="grid grid-cols-2 gap-3 lg:grid-cols-[minmax(12rem,1.8fr)_minmax(10rem,1.3fr)_repeat(6,5.5rem)] lg:items-start">
             <div class="col-span-2 lg:col-span-1">
               <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500 lg:hidden">Игрок</label>
               <%= grf.select :player_id,
                   options_for_select(row_player_options, gr.player_id),
                   { include_blank: "— свободный слот —" },
-                  class: "w-full min-w-0 rounded border border-gray-300 px-3 py-2 text-sm",
+                  class: "h-12 w-full min-w-0 rounded border border-gray-300 px-3 text-sm leading-5",
                   data: { action: "change->slot-toggle#refresh", slot_toggle_target: "playerSelect" } %>
             </div>
 
@@ -54,7 +54,7 @@
               <%= grf.select :house,
                   options_for_select(row_house_options, gr.house),
                   { include_blank: "— дом —" },
-                  class: "w-full min-w-0 rounded border border-gray-300 px-3 py-2 text-sm disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400",
+                  class: "h-12 w-full min-w-0 rounded border border-gray-300 px-3 text-sm leading-5 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400",
                   disabled: gr.player_id.blank?,
                   data: { action: "change->slot-toggle#refresh", slot_toggle_target: "houseSelect" } %>
               <p class="mt-1 min-h-[3.75rem] text-xs text-gray-500" data-slot-toggle-target="houseHint"><%= house_hint %></p>
@@ -62,38 +62,38 @@
 
             <div>
               <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500 lg:hidden">Место</label>
-              <%= grf.number_field :place, min: 1, max: 8, class: "w-full rounded border border-gray-300 px-3 py-2 text-center text-sm",
+              <%= grf.number_field :place, min: 1, max: 8, class: "h-12 w-full rounded border border-gray-300 px-3 text-center text-sm leading-5",
                   data: { action: "input->points-calculator#calculate", points_calculator_target: "place" } %>
             </div>
 
             <div>
               <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500 lg:hidden">Столицы</label>
-              <%= grf.number_field :capitals, min: 0, value: gr.capitals || 0, class: "w-full rounded border border-gray-300 px-3 py-2 text-center text-sm",
+              <%= grf.number_field :capitals, min: 0, value: gr.capitals || 0, class: "h-12 w-full rounded border border-gray-300 px-3 text-center text-sm leading-5",
                   data: { action: "input->points-calculator#calculate", points_calculator_target: "capitals" } %>
             </div>
 
             <div>
               <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500 lg:hidden">Драконы</label>
-              <%= grf.number_field :dragons, min: 0, value: gr.dragons || 0, class: "w-full rounded border border-gray-300 px-3 py-2 text-center text-sm",
+              <%= grf.number_field :dragons, min: 0, value: gr.dragons || 0, class: "h-12 w-full rounded border border-gray-300 px-3 text-center text-sm leading-5",
                   data: { action: "input->points-calculator#calculate", points_calculator_target: "dragons" } %>
             </div>
 
             <div>
               <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500 lg:hidden">Замки</label>
-              <%= grf.number_field :castles, min: 0, value: gr.castles || 0, class: "w-full rounded border border-gray-300 px-3 py-2 text-center text-sm",
+              <%= grf.number_field :castles, min: 0, value: gr.castles || 0, class: "h-12 w-full rounded border border-gray-300 px-3 text-center text-sm leading-5",
                   data: { action: "input->points-calculator#calculate", points_calculator_target: "castles" } %>
             </div>
 
             <div>
               <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500 lg:hidden">Подсказка</label>
-              <div class="flex h-[42px] items-center justify-center rounded border border-dashed border-gray-300 bg-gray-50 px-2 text-sm text-gray-500" data-points-calculator-target="suggested">
+              <div class="flex h-12 w-full items-center justify-center rounded border border-dashed border-gray-300 bg-gray-50 px-3 text-center text-sm leading-5 text-gray-500" data-points-calculator-target="suggested">
                 <%= gr.persisted? && gr.place ? gr.suggested_points : "—" %>
               </div>
             </div>
 
             <div>
               <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500 lg:hidden">Очки</label>
-              <%= grf.number_field :points, class: "w-full rounded border border-gray-300 px-3 py-2 text-center text-sm font-bold",
+              <%= grf.number_field :points, class: "h-12 w-full rounded border border-gray-300 px-3 text-center text-sm font-bold leading-5",
                   data: { points_calculator_target: "points" } %>
             </div>
           </div>

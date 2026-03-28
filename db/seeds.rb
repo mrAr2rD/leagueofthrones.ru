@@ -136,7 +136,7 @@ SitePage.find_or_create_by!(slug: "rules") do |p|
 end
 puts "Rules page created"
 
-# 28 players
+# 32 players
 players_data = [
   { first_name: "Семён",      nickname: "@samzakharov" },
   { first_name: "Артем",       nickname: "@aesmic" },
@@ -165,7 +165,11 @@ players_data = [
   { first_name: "Александар",  nickname: "@Aleksandar_Simic" },
   { first_name: "Стефан",      nickname: "@stefan1378" },
   { first_name: "Савелий",     nickname: "@ChingizCat" },
-  { first_name: "Александр",   nickname: "@arepchenko" }
+  { first_name: "Александр",   nickname: "@arepchenko" },
+  { first_name: "Дмитрий",     nickname: "@dmtrv" },
+  { first_name: "Павел",       nickname: "@pvlv" },
+  { first_name: "Никита",      nickname: "@nktv" },
+  { first_name: "Кирилл",      nickname: "@krlv" }
 ]
 
 players = players_data.map do |data|
@@ -185,7 +189,7 @@ tours = (1..8).map do |n|
 end
 puts "#{tours.size} tours created"
 
-# 4 games per tour (7 players per table for 28 players)
+# 4 games per tour (8 players per table for 32 players)
 tours.each do |tour|
   Game::TABLE_LETTERS.each do |letter|
     Game.find_or_create_by!(tour: tour, table_letter: letter)
@@ -203,8 +207,8 @@ used_houses_by_player = Hash.new { |hash, key| hash[key] = [] }
   tour_players = shuffled_players.rotate(tour_idx * 3)
 
   tour.games.ordered.each_with_index do |game, table_idx|
-    table_players = tour_players[table_idx * 7, 7]
-    next unless table_players&.size == 7
+    table_players = tour_players[table_idx * 8, 8]
+    next unless table_players&.size == 8
     house_assignment = assign_houses_for_players(table_players, used_houses_by_player, rng)
 
     table_players.each_with_index do |player, place_idx|

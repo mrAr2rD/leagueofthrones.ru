@@ -3,7 +3,7 @@
   <%= link_to "← Назад", admin_tour_path(@tour), class: "text-gray-500 hover:text-gray-700 text-sm" %>
 </div>
 
-<%= form_with model: @game, url: admin_tour_game_path(@tour, @game), method: :patch, class: "bg-white rounded shadow p-6", data: { controller: "points-calculator" } do |f| %>
+<%= form_with model: @game, url: admin_tour_game_path(@tour, @game), method: :patch, class: "bg-white rounded shadow p-6", data: { controller: "points-calculator slot-toggle" } do |f| %>
   <table class="w-full text-sm">
     <thead>
       <tr class="border-b bg-gray-50">
@@ -18,13 +18,14 @@
     </thead>
     <tbody>
       <% @game.game_results.each_with_index do |gr, i| %>
-        <tr class="border-b" data-points-calculator-target="row">
+        <tr class="border-b <%= 'bg-gray-50 opacity-50' unless gr.player_id.present? %>" data-points-calculator-target="row" data-slot-toggle-target="row">
           <%= f.fields_for "game_results_attributes[]", gr, index: i do |grf| %>
             <%= grf.hidden_field :id if gr.persisted? %>
             <td class="px-2 py-2">
               <%= grf.collection_select :player_id, @players, :id, :display_name,
-                  { include_blank: "— выберите —" },
-                  class: "w-full border border-gray-300 rounded px-2 py-1 text-sm" %>
+                  { include_blank: "— свободный слот —" },
+                  class: "w-full border border-gray-300 rounded px-2 py-1 text-sm",
+                  data: { action: "change->slot-toggle#toggle", slot_toggle_target: "select" } %>
             </td>
             <td class="px-2 py-2">
               <%= grf.number_field :place, min: 1, max: 8, class: "w-16 border border-gray-300 rounded px-2 py-1 text-center",

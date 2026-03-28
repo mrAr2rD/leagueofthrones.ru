@@ -516,10 +516,10 @@ body.pixel-realm::after {
    PLAYER NAME COLUMN
    ═══════════════════════════════════════════ */
 .player-name {
-  font-family: var(--font-terminal);
-  font-size: 20px;
+  font-family: var(--font-pixel);
+  font-size: 10px;
   color: var(--ink);
-  line-height: 1.2;
+  line-height: 1.4;
 }
 .player-nick {
   font-family: var(--font-pixel);
@@ -705,6 +705,22 @@ body.pixel-realm::after {
   color: var(--gold);
   overflow: hidden;
 }
+.player-card-avatar.league-gold {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+.player-card-avatar.league-silver {
+  border-color: var(--silver);
+  color: var(--silver);
+}
+.player-card-avatar.league-bronze {
+  border-color: var(--bronze);
+  color: var(--bronze);
+}
+.player-card-avatar.league-iron {
+  border-color: var(--iron);
+  color: var(--iron);
+}
 .player-card-avatar img {
   width: 100%;
   height: 100%;
@@ -826,7 +842,7 @@ body.pixel-realm::after {
     font-size: 12px;
   }
   .player-name {
-    font-size: 16px;
+    font-size: 8px;
   }
   .player-nick {
     font-size: 7px;
@@ -1352,10 +1368,10 @@ body.pixel-realm::after {
    RULES CONTENT — STYLED TEXT
    ═══════════════════════════════════════════ */
 .rules-content {
-  font-family: var(--font-terminal);
-  font-size: 20px;
+  font-family: var(--font-pixel);
+  font-size: 10px;
   color: var(--ink);
-  line-height: 1.6;
+  line-height: 2;
 }
 .rules-content p {
   margin-bottom: 0.75rem;

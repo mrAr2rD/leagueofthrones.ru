@@ -37,13 +37,19 @@ module Admin
 
       GameResult.transaction do
         results_params[:game_results_attributes].each do |attrs|
-          next if attrs[:player_id].blank?
+          existing = attrs[:id].present? ? @game.game_results.find_by(id: attrs[:id]) : nil
 
-          if attrs[:id].present?
-            result = @game.game_results.find(attrs[:id])
-            result.update!(attrs.except(:id, :_destroy))
+          if attrs[:player_id].blank?
+            existing&.destroy!
+            next
+          end
+
+          clean = attrs.except(:id, :_destroy).transform_values { |v| v.presence }
+
+          if existing
+            existing.update!(clean)
           else
-            @game.game_results.create!(attrs.except(:id, :_destroy))
+            @game.game_results.create!(clean)
           end
         end
       end

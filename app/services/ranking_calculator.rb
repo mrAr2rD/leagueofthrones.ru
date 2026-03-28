@@ -1,7 +1,7 @@
 class RankingCalculator
   RankedPlayer = Struct.new(
     :player, :total_points, :best6_points, :wins, :capitals, :dragons,
-    :games_played, :rank, :league, :rank_change, keyword_init: true
+    :games_played, :rank, :league, :rank_change, :last_tour_points, keyword_init: true
   )
 
   LEAGUES = {
@@ -26,7 +26,10 @@ class RankingCalculator
   end
 
   def call
-    players = Player.includes(game_results: :game).all
+    players = Player.includes(game_results: { game: :tour }).all
+    @last_tour = Tour.joins(games: :game_results)
+                     .where.not(game_results: { points: nil })
+                     .order(number: :desc).first
     ranked = players.map { |player| build_ranking(player) }
 
     ranked.sort_by! { |rp| [ -rp.best6_points, -rp.wins, -rp.capitals, -rp.dragons ] }
@@ -47,17 +50,23 @@ class RankingCalculator
     points_list = results.map(&:points).sort.reverse
     best6 = points_list.first(6).sum
 
+    last_tour_pts = if @last_tour
+      results.select { |r| r.game.tour_id == @last_tour.id }
+             .sum { |r| r.points || 0 }
+    end
+
     RankedPlayer.new(
       player: player,
       total_points: points_list.sum,
       best6_points: best6,
       wins: results.count { |r| r.place == 1 },
-      capitals: results.sum(&:capitals),
-      dragons: results.sum(&:dragons),
+      capitals: results.sum { |r| r.capitals || 0 },
+      dragons: results.sum { |r| r.dragons || 0 },
       games_played: results.size,
       rank: 0,
       league: :iron,
-      rank_change: nil
+      rank_change: nil,
+      last_tour_points: last_tour_pts
     )
   end
 

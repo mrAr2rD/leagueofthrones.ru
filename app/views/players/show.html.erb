@@ -11,7 +11,7 @@
   <div class="pixel-box pixel-box-gold p-6">
 
     <div class="text-center mb-6">
-      <div class="player-card-avatar">
+      <div class="player-card-avatar league-<%= @league %>">
         <% if @player.photo.attached? %>
           <%= image_tag @player.photo_large, alt: @player.nickname %>
         <% else %>
@@ -19,7 +19,7 @@
         <% end %>
       </div>
       <h1 class="player-card-name"><%= @player.display_name %></h1>
-      <p class="player-card-nick">&laquo; <%= @player.nickname %> &raquo;</p>
+      <p class="player-card-nick"><%= @player.nickname %></p>
 
       <div class="pixel-chain" style="margin-top: 1.5rem;">
         <% 6.times do %><span class="pixel-chain-link"></span><% end %>
@@ -33,27 +33,27 @@
       <div class="player-summary-grid">
         <div class="player-summary-item">
           <span class="player-summary-value"><%= @results.size %></span>
-          <span class="player-summary-label"><span class="icon-sword"></span> Игры</span>
+          <span class="player-summary-label">Игры</span>
         </div>
         <div class="player-summary-item">
           <span class="player-summary-value"><%= @results.count { |r| r.place == 1 } %></span>
-          <span class="player-summary-label"><span class="icon-crown"></span> Победы</span>
+          <span class="player-summary-label">Победы</span>
         </div>
         <div class="player-summary-item">
-          <span class="player-summary-value"><%= @results.sum(&:points).to_i %></span>
-          <span class="player-summary-label">Всего очков</span>
+          <span class="player-summary-value"><%= @results.sum { |r| r.points || 0 } %></span>
+          <span class="player-summary-label">Очки</span>
         </div>
         <div class="player-summary-item">
-          <span class="player-summary-value"><%= @results.sum(&:capitals) %></span>
-          <span class="player-summary-label"><span class="icon-crown"></span> Столицы</span>
+          <span class="player-summary-value"><%= @results.sum { |r| r.capitals || 0 } %></span>
+          <span class="player-summary-label">Столицы</span>
         </div>
         <div class="player-summary-item">
-          <span class="player-summary-value"><%= @results.sum(&:dragons) %></span>
-          <span class="player-summary-label"><span class="icon-dragon"></span> Драконы</span>
+          <span class="player-summary-value"><%= @results.sum { |r| r.dragons || 0 } %></span>
+          <span class="player-summary-label">Драконы</span>
         </div>
         <div class="player-summary-item">
-          <span class="player-summary-value"><%= @results.sum(&:castles) %></span>
-          <span class="player-summary-label"><span class="icon-castle"></span> Замки</span>
+          <span class="player-summary-value"><%= @results.sum { |r| r.castles || 0 } %></span>
+          <span class="player-summary-label">Замки</span>
         </div>
       </div>
 

@@ -241,5 +241,45 @@ module Admin
       assert_nil new_result.points
       assert_equal "tyrell", new_result.house
     end
+
+    test "keeps manually entered points even when they differ from the suggestion" do
+      game = games(:game_1a)
+      first_result = game_results(:daenerys_game1)
+      second_result = game_results(:jon_game1)
+
+      patch admin_tour_game_url(tours(:tour_one), game), params: {
+        game: {
+          game_results_attributes: {
+            "0" => {
+              id: first_result.id,
+              player_id: first_result.player_id,
+              house: first_result.house,
+              place: 1,
+              points: 999,
+              capitals: 2,
+              dragons: 1,
+              castles: 0
+            },
+            "1" => {
+              id: second_result.id,
+              player_id: second_result.player_id,
+              house: second_result.house,
+              place: 2,
+              points: 999,
+              capitals: 1,
+              dragons: 0,
+              castles: 2
+            }
+          }
+        }
+      }
+
+      assert_redirected_to admin_tour_url(tours(:tour_one))
+      saved_results = game.reload.game_results.index_by(&:player_id)
+      assert_equal 999, saved_results.fetch(first_result.player_id).points
+      assert_equal 999, saved_results.fetch(second_result.player_id).points
+      assert_equal 16, saved_results.fetch(first_result.player_id).suggested_points
+      assert_equal 11, saved_results.fetch(second_result.player_id).suggested_points
+    end
   end
 end

@@ -12,14 +12,53 @@ class GameResultTest < ActiveSupport::TestCase
     assert_not gr.valid?
   end
 
-  test "suggested_points calculation" do
-    gr = GameResult.new(place: 1, capitals: 2, dragons: 1, castles: 0)
-    assert_equal 20, gr.suggested_points
+  test "suggested_points follows published rules for table A" do
+    gr = GameResult.new(game: games(:game_1a), place: 1, capitals: 2, dragons: 1, castles: 0)
+    assert_equal 16, gr.suggested_points
   end
 
-  test "suggested_points for last place" do
-    gr = GameResult.new(place: 8, capitals: 0, dragons: 0, castles: 0)
+  test "suggested_points for last place without bonuses" do
+    gr = GameResult.new(game: games(:game_1b), place: 8, capitals: 0, dragons: 0, castles: 0)
     assert_equal 1, gr.suggested_points
+  end
+
+  test "suggested_points caps capital and castle bonuses" do
+    gr = GameResult.new(game: games(:game_1a), place: 3, capitals: 7, dragons: 2, castles: 9)
+    assert_equal 17, gr.suggested_points
+  end
+
+  test "manual points remain the source of truth" do
+    game = Game.create!(tour: tours(:tour_two), table_letter: "A")
+    gr = GameResult.new(
+      game: game,
+      player: players(:daenerys),
+      house: "baratheon",
+      place: 2,
+      points: 999,
+      capitals: 1,
+      dragons: 0,
+      castles: 2
+    )
+
+    assert gr.valid?
+    assert_equal 999, gr.points
+    assert_equal 11, gr.suggested_points
+  end
+
+  test "capital values above scoring cap are still valid" do
+    gr = game_results(:daenerys_game1)
+    gr.capitals = 10
+
+    assert gr.valid?
+    assert_equal 17, gr.suggested_points
+  end
+
+  test "castle values above scoring cap are still valid" do
+    gr = game_results(:daenerys_game1)
+    gr.castles = 10
+
+    assert gr.valid?
+    assert_equal 21, gr.suggested_points
   end
 
   test "house must be one of allowed values" do

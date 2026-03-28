@@ -3,7 +3,7 @@ daenerys_game1:
   player: daenerys
   house: stark
   place: 1
-  points: 20
+  points: 16
   capitals: 2
   dragons: 1
   castles: 0
@@ -13,7 +13,7 @@ jon_game1:
   player: jon
   house: lannister
   place: 2
-  points: 15
+  points: 11
   capitals: 1
   dragons: 0
   castles: 2
@@ -23,7 +23,7 @@ cersei_game1:
   player: cersei
   house: targaryen
   place: 1
-  points: 18
+  points: 14
   capitals: 1
   dragons: 1
   castles: 0

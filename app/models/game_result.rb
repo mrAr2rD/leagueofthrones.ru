@@ -11,7 +11,10 @@ class GameResult < ApplicationRecord
   }.freeze
 
   HOUSE_OPTIONS = HOUSE_LABELS.map { |key, label| [ label, key ] }.freeze
-  PLACE_POINTS = { 1 => 15, 2 => 12, 3 => 10, 4 => 8, 5 => 6, 6 => 4, 7 => 2, 8 => 1 }.freeze
+  PLACE_POINTS = { 1 => 12, 2 => 7, 3 => 6, 4 => 5, 5 => 4, 6 => 3, 7 => 2, 8 => 1 }.freeze
+  TABLE_A_BONUS_PLACES = [ 1, 2, 3 ].freeze
+  MAX_CAPITAL_POINTS = 3
+  MAX_CASTLES_POINTS = 5
 
   belongs_to :game
   belongs_to :player
@@ -40,11 +43,21 @@ class GameResult < ApplicationRecord
     HOUSE_OPTIONS.reject { |(_label, key)| used_houses.include?(key) }
   end
 
-  def suggested_points
-    return 0 unless place
+  def self.calculate_points(place:, capitals:, dragons:, castles:, table_letter:)
+    normalized_place = place.to_i
+    return nil if normalized_place <= 0
 
-    base = PLACE_POINTS.fetch(place, 0)
-    base + ((capitals || 0) * 2) + (dragons || 0) + (castles || 0)
+    place_points = PLACE_POINTS.fetch(normalized_place, 0)
+    table_bonus = table_letter == "A" && TABLE_A_BONUS_PLACES.include?(normalized_place) ? 1 : 0
+
+    place_points + table_bonus +
+      [ capitals.to_i, MAX_CAPITAL_POINTS ].min +
+      dragons.to_i +
+      [ castles.to_i, MAX_CASTLES_POINTS ].min
+  end
+
+  def suggested_points
+    calculated_points || 0
   end
 
   def house_name
@@ -52,6 +65,16 @@ class GameResult < ApplicationRecord
   end
 
   private
+
+  def calculated_points
+    self.class.calculate_points(
+      place: place,
+      capitals: capitals,
+      dragons: dragons,
+      castles: castles,
+      table_letter: game&.table_letter
+    )
+  end
 
   def player_unique_within_game
     return unless player_id? && game_id?

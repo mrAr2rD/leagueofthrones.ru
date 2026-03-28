@@ -10,6 +10,7 @@
     data: {
       controller: "points-calculator slot-toggle",
       action: "submit->slot-toggle#validateBeforeSubmit",
+      points_calculator_table_letter_value: @game.table_letter,
       slot_toggle_all_player_options_value: @player_options.to_json,
       slot_toggle_blocked_player_ids_value: @blocked_player_ids.map(&:to_s).to_json,
       slot_toggle_all_house_options_value: @house_options.to_json,
@@ -94,7 +95,7 @@
             <div>
               <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500 lg:hidden">Очки</label>
               <%= grf.number_field :points, class: "h-12 w-full rounded border border-gray-300 px-3 text-center text-sm font-bold leading-5",
-                  data: { points_calculator_target: "points" } %>
+                  data: { action: "input->points-calculator#updateManualAdjustment", points_calculator_target: "points" } %>
             </div>
           </div>
         </div>

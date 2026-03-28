@@ -213,9 +213,9 @@ used_houses_by_player = Hash.new { |hash, key| hash[key] = [] }
 
     table_players.each_with_index do |player, place_idx|
       place = place_idx + 1
-      capitals = rng.rand(0..3)
+      capitals = rng.rand(0..5)
       dragons = rng.rand(0..2)
-      castles = rng.rand(0..4)
+      castles = rng.rand(0..7)
 
       gr = GameResult.find_or_initialize_by(game: game, player: player)
       gr.place = place
@@ -223,7 +223,13 @@ used_houses_by_player = Hash.new { |hash, key| hash[key] = [] }
       gr.dragons = dragons
       gr.castles = castles
       gr.house = house_assignment.fetch(player.id)
-      gr.points = GameResult::PLACE_POINTS.fetch(place, 0) + (capitals * 2) + dragons + castles
+      gr.points = GameResult.calculate_points(
+        place: place,
+        capitals: capitals,
+        dragons: dragons,
+        castles: castles,
+        table_letter: game.table_letter
+      )
       gr.save!
       used_houses_by_player[player.id] |= [ gr.house ]
     end

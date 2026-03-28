@@ -1,40 +1,78 @@
-<div class="flex justify-between items-center mb-6">
+<div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
   <h1 class="text-2xl font-bold">Игроки</h1>
-  <%= link_to "Добавить игрока", new_admin_player_path, class: "bg-gray-900 text-white px-4 py-2 rounded hover:bg-gray-700 text-sm" %>
+  <%= link_to "Добавить игрока", new_admin_player_path, class: "inline-flex w-full items-center justify-center rounded bg-gray-900 px-4 py-2 text-sm text-white hover:bg-gray-700 sm:w-auto" %>
 </div>
 
-<table class="w-full bg-white rounded shadow text-sm">
-  <thead>
-    <tr class="border-b bg-gray-100">
-      <th class="px-4 py-2 text-left">Фото</th>
-      <th class="px-4 py-2 text-left">Имя</th>
-      <th class="px-4 py-2 text-left">Фамилия</th>
-      <th class="px-4 py-2 text-left">Никнейм</th>
-      <th class="px-4 py-2 text-right">Действия</th>
-    </tr>
-  </thead>
-  <tbody>
-    <% @players.each do |player| %>
-      <tr class="border-b hover:bg-gray-50">
-        <td class="px-4 py-2">
-          <% if player.photo.attached? %>
-            <%= image_tag player.photo_thumbnail, class: "w-8 h-8 rounded-full object-cover" %>
-          <% else %>
-            <div class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-500">
-              <%= player.initials %>
-            </div>
-          <% end %>
-        </td>
-        <td class="px-4 py-2"><%= player.first_name %></td>
-        <td class="px-4 py-2"><%= player.last_name %></td>
-        <td class="px-4 py-2 text-gray-500"><%= player.nickname %></td>
-        <td class="px-4 py-2 text-right space-x-2">
-          <%= link_to "Ред.", edit_admin_player_path(player), class: "text-blue-600 hover:underline" %>
-          <%= button_to "Удалить", admin_player_path(player), method: :delete,
-              data: { turbo_confirm: "Удалить игрока #{player.nickname}?" },
-              class: "text-red-600 hover:underline" %>
-        </td>
-      </tr>
-    <% end %>
-  </tbody>
-</table>
+<div class="space-y-3 md:hidden">
+  <% @players.each do |player| %>
+    <div class="rounded-lg bg-white p-4 shadow">
+      <div class="flex items-start gap-3">
+        <% if player.photo.attached? %>
+          <%= image_tag player.photo_thumbnail, class: "h-10 w-10 shrink-0 rounded-full object-cover" %>
+        <% else %>
+          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-200 text-xs text-gray-500">
+            <%= player.initials %>
+          </div>
+        <% end %>
+
+        <div class="min-w-0 flex-1">
+          <div class="break-words text-base font-semibold text-gray-900">
+            <%= [player.first_name, player.last_name].compact_blank.join(" ") %>
+          </div>
+          <div class="mt-1 break-all text-sm text-gray-500"><%= player.nickname %></div>
+        </div>
+      </div>
+
+      <div class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-gray-100 pt-3 text-sm">
+        <%= link_to "Ред.", edit_admin_player_path(player), class: "font-medium text-blue-600 hover:underline" %>
+        <%= button_to "Удалить", admin_player_path(player), method: :delete,
+            data: { turbo_confirm: "Удалить игрока #{player.nickname}?" },
+            class: "font-medium text-red-600 hover:underline",
+            form_class: "inline-block" %>
+      </div>
+    </div>
+  <% end %>
+</div>
+
+<div class="hidden md:block">
+  <div class="overflow-x-auto rounded shadow">
+    <table class="min-w-full bg-white text-sm">
+      <thead>
+        <tr class="border-b bg-gray-100">
+          <th class="px-4 py-2 text-left">Фото</th>
+          <th class="px-4 py-2 text-left">Имя</th>
+          <th class="px-4 py-2 text-left">Фамилия</th>
+          <th class="px-4 py-2 text-left">Никнейм</th>
+          <th class="px-4 py-2 text-right">Действия</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @players.each do |player| %>
+          <tr class="border-b hover:bg-gray-50">
+            <td class="px-4 py-2">
+              <% if player.photo.attached? %>
+                <%= image_tag player.photo_thumbnail, class: "h-8 w-8 rounded-full object-cover" %>
+              <% else %>
+                <div class="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200 text-xs text-gray-500">
+                  <%= player.initials %>
+                </div>
+              <% end %>
+            </td>
+            <td class="px-4 py-2"><%= player.first_name %></td>
+            <td class="px-4 py-2"><%= player.last_name %></td>
+            <td class="px-4 py-2 text-gray-500"><%= player.nickname %></td>
+            <td class="px-4 py-2">
+              <div class="flex items-center justify-end gap-3 whitespace-nowrap">
+                <%= link_to "Ред.", edit_admin_player_path(player), class: "text-blue-600 hover:underline" %>
+                <%= button_to "Удалить", admin_player_path(player), method: :delete,
+                    data: { turbo_confirm: "Удалить игрока #{player.nickname}?" },
+                    class: "text-red-600 hover:underline",
+                    form_class: "inline-block" %>
+              </div>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>

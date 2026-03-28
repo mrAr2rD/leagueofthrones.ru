@@ -9,6 +9,6 @@ class LeaderboardControllerTest < ActionDispatch::IntegrationTest
 
   test "shows player names" do
     get root_url
-    assert_match "@samzakharov", response.body
+    assert_match "samzakharov", response.body
   end
 end

@@ -1,62 +1,109 @@
-<div class="flex items-center justify-between mb-6">
+<div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
   <h1 class="text-2xl font-bold">Тур <%= @tour.number %> — Стол <%= @game.table_letter %></h1>
-  <%= link_to "← Назад", admin_tour_path(@tour), class: "text-gray-500 hover:text-gray-700 text-sm" %>
+  <%= link_to "← Назад", admin_tour_path(@tour), class: "text-sm text-gray-500 hover:text-gray-700" %>
 </div>
 
-<%= form_with model: @game, url: admin_tour_game_path(@tour, @game), method: :patch, class: "bg-white rounded shadow p-6", data: { controller: "points-calculator slot-toggle" } do |f| %>
-  <table class="w-full text-sm">
-    <thead>
-      <tr class="border-b bg-gray-50">
-        <th class="px-2 py-2 text-left">Игрок</th>
-        <th class="px-2 py-2 text-center">Место</th>
-        <th class="px-2 py-2 text-center">Столицы</th>
-        <th class="px-2 py-2 text-center">Драконы</th>
-        <th class="px-2 py-2 text-center">Замки</th>
-        <th class="px-2 py-2 text-center">Подсказка</th>
-        <th class="px-2 py-2 text-center">Очки</th>
-      </tr>
-    </thead>
-    <tbody>
-      <% @game.game_results.each_with_index do |gr, i| %>
-        <tr class="border-b <%= 'bg-gray-50 opacity-50' unless gr.player_id.present? %>" data-points-calculator-target="row" data-slot-toggle-target="row">
-          <%= f.fields_for "game_results_attributes[]", gr, index: i do |grf| %>
-            <%= grf.hidden_field :id if gr.persisted? %>
-            <td class="px-2 py-2">
-              <%= grf.collection_select :player_id, @players, :id, :display_name,
-                  { include_blank: "— свободный слот —" },
-                  class: "w-full border border-gray-300 rounded px-2 py-1 text-sm",
-                  data: { action: "change->slot-toggle#toggle", slot_toggle_target: "select" } %>
-            </td>
-            <td class="px-2 py-2">
-              <%= grf.number_field :place, min: 1, max: 8, class: "w-16 border border-gray-300 rounded px-2 py-1 text-center",
-                  data: { action: "input->points-calculator#calculate", points_calculator_target: "place" } %>
-            </td>
-            <td class="px-2 py-2">
-              <%= grf.number_field :capitals, min: 0, value: gr.capitals || 0, class: "w-16 border border-gray-300 rounded px-2 py-1 text-center",
-                  data: { action: "input->points-calculator#calculate", points_calculator_target: "capitals" } %>
-            </td>
-            <td class="px-2 py-2">
-              <%= grf.number_field :dragons, min: 0, value: gr.dragons || 0, class: "w-16 border border-gray-300 rounded px-2 py-1 text-center",
-                  data: { action: "input->points-calculator#calculate", points_calculator_target: "dragons" } %>
-            </td>
-            <td class="px-2 py-2">
-              <%= grf.number_field :castles, min: 0, value: gr.castles || 0, class: "w-16 border border-gray-300 rounded px-2 py-1 text-center",
-                  data: { action: "input->points-calculator#calculate", points_calculator_target: "castles" } %>
-            </td>
-            <td class="px-2 py-2 text-center text-gray-400" data-points-calculator-target="suggested">
-              <%= gr.persisted? && gr.place ? gr.suggested_points : "—" %>
-            </td>
-            <td class="px-2 py-2">
-              <%= grf.number_field :points, class: "w-16 border border-gray-300 rounded px-2 py-1 text-center font-bold",
-                  data: { points_calculator_target: "points" } %>
-            </td>
-          <% end %>
-        </tr>
-      <% end %>
-    </tbody>
-  </table>
+<%= form_with model: @game,
+    url: admin_tour_game_path(@tour, @game),
+    method: :patch,
+    class: "overflow-hidden rounded-lg bg-white shadow",
+    data: {
+      controller: "points-calculator slot-toggle",
+      action: "submit->slot-toggle#validateBeforeSubmit",
+      slot_toggle_all_player_options_value: @player_options.to_json,
+      slot_toggle_blocked_player_ids_value: @blocked_player_ids.map(&:to_s).to_json,
+      slot_toggle_all_house_options_value: @house_options.to_json,
+      slot_toggle_player_house_options_value: @player_house_options.to_json
+    } do |f| %>
+  <div class="hidden border-b bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-700 lg:grid lg:grid-cols-[minmax(12rem,1.8fr)_minmax(10rem,1.3fr)_5rem_5rem_5rem_5rem_6rem_5rem] lg:gap-3">
+    <div>Игрок</div>
+    <div>Дом</div>
+    <div class="text-center">Место</div>
+    <div class="text-center">Столицы</div>
+    <div class="text-center">Драконы</div>
+    <div class="text-center">Замки</div>
+    <div class="text-center">Подсказка</div>
+    <div class="text-center">Очки</div>
+  </div>
 
-  <div class="mt-4">
-    <%= f.submit "Сохранить результаты", class: "bg-gray-900 text-white px-6 py-2 rounded hover:bg-gray-700 cursor-pointer" %>
+  <div class="divide-y divide-gray-200">
+    <% @game.game_results.each_with_index do |gr, i| %>
+      <%= f.fields_for "game_results_attributes[]", gr, index: i do |grf| %>
+        <% row_player_options = @player_options_by_selected.fetch(gr.player_id.to_s, @player_options_by_selected.fetch("")) %>
+        <% row_house_options = gr.player_id.present? ? @player_house_options.fetch(gr.player_id.to_s, @house_options) : @house_options %>
+        <% house_hint = if gr.player_id.present?
+             row_house_options.any? ? "Можно выбрать: #{row_house_options.map(&:first).join(', ')}" : "У этого игрока не осталось свободных домов"
+           else
+             "Сначала выберите игрока"
+           end %>
+        <div class="<%= 'bg-gray-50 opacity-50' unless gr.player_id.present? %> p-4" data-points-calculator-target="row" data-slot-toggle-target="row">
+          <%= grf.hidden_field :id if gr.persisted? %>
+
+          <div class="grid grid-cols-2 gap-3 lg:grid-cols-[minmax(12rem,1.8fr)_minmax(10rem,1.3fr)_5rem_5rem_5rem_5rem_6rem_5rem] lg:items-start">
+            <div class="col-span-2 lg:col-span-1">
+              <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500 lg:hidden">Игрок</label>
+              <%= grf.select :player_id,
+                  options_for_select(row_player_options, gr.player_id),
+                  { include_blank: "— свободный слот —" },
+                  class: "w-full min-w-0 rounded border border-gray-300 px-3 py-2 text-sm",
+                  data: { action: "change->slot-toggle#refresh", slot_toggle_target: "playerSelect" } %>
+            </div>
+
+            <div class="col-span-2 lg:col-span-1">
+              <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500 lg:hidden">Дом</label>
+              <%= grf.select :house,
+                  options_for_select(row_house_options, gr.house),
+                  { include_blank: "— дом —" },
+                  class: "w-full min-w-0 rounded border border-gray-300 px-3 py-2 text-sm disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400",
+                  disabled: gr.player_id.blank?,
+                  data: { action: "change->slot-toggle#refresh", slot_toggle_target: "houseSelect" } %>
+              <p class="mt-1 min-h-[3.75rem] text-xs text-gray-500" data-slot-toggle-target="houseHint"><%= house_hint %></p>
+            </div>
+
+            <div>
+              <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500 lg:hidden">Место</label>
+              <%= grf.number_field :place, min: 1, max: 8, class: "w-full rounded border border-gray-300 px-3 py-2 text-center text-sm",
+                  data: { action: "input->points-calculator#calculate", points_calculator_target: "place" } %>
+            </div>
+
+            <div>
+              <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500 lg:hidden">Столицы</label>
+              <%= grf.number_field :capitals, min: 0, value: gr.capitals || 0, class: "w-full rounded border border-gray-300 px-3 py-2 text-center text-sm",
+                  data: { action: "input->points-calculator#calculate", points_calculator_target: "capitals" } %>
+            </div>
+
+            <div>
+              <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500 lg:hidden">Драконы</label>
+              <%= grf.number_field :dragons, min: 0, value: gr.dragons || 0, class: "w-full rounded border border-gray-300 px-3 py-2 text-center text-sm",
+                  data: { action: "input->points-calculator#calculate", points_calculator_target: "dragons" } %>
+            </div>
+
+            <div>
+              <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500 lg:hidden">Замки</label>
+              <%= grf.number_field :castles, min: 0, value: gr.castles || 0, class: "w-full rounded border border-gray-300 px-3 py-2 text-center text-sm",
+                  data: { action: "input->points-calculator#calculate", points_calculator_target: "castles" } %>
+            </div>
+
+            <div>
+              <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500 lg:hidden">Подсказка</label>
+              <div class="flex h-[42px] items-center justify-center rounded border border-dashed border-gray-300 bg-gray-50 px-2 text-sm text-gray-500" data-points-calculator-target="suggested">
+                <%= gr.persisted? && gr.place ? gr.suggested_points : "—" %>
+              </div>
+            </div>
+
+            <div>
+              <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500 lg:hidden">Очки</label>
+              <%= grf.number_field :points, class: "w-full rounded border border-gray-300 px-3 py-2 text-center text-sm font-bold",
+                  data: { points_calculator_target: "points" } %>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    <% end %>
+  </div>
+
+  <div class="border-t px-4 py-4">
+    <p class="mb-3 hidden rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700" data-slot-toggle-target="formError"></p>
+    <%= f.submit "Сохранить результаты", class: "w-full cursor-pointer rounded bg-gray-900 px-6 py-2 text-white hover:bg-gray-700 sm:w-auto" %>
   </div>
 <% end %>

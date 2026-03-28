@@ -9,6 +9,18 @@ class Player < ApplicationRecord
     [first_name, last_name].compact_blank.join(" ")
   end
 
+  def nickname_handle
+    return if nickname.blank?
+
+    nickname.start_with?("@") ? nickname : "@#{nickname}"
+  end
+
+  def admin_option_label
+    return display_name if nickname_handle.blank?
+
+    "#{display_name} (#{nickname_handle})"
+  end
+
   def initials
     parts = [first_name, last_name].compact_blank
     parts.map { |p| p[0] }.join

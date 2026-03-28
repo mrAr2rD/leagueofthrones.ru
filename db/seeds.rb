@@ -4,6 +4,35 @@ AdminUser.find_or_create_by!(login: "admin") do |u|
 end
 puts "Admin user created (login: admin)"
 
+def assign_houses_for_players(players, used_houses_by_player, rng)
+  player_options = players.map do |player|
+    available_houses = GameResult::HOUSE_LABELS.keys - used_houses_by_player.fetch(player.id, [])
+    raise "Для #{player.nickname} не осталось свободных домов" if available_houses.empty?
+
+    [ player, available_houses.shuffle(random: rng) ]
+  end.sort_by { |(_player, available_houses)| available_houses.length }
+
+  assignment = resolve_house_assignment(player_options, [])
+  raise "Не удалось подобрать уникальные дома для стола" unless assignment
+
+  assignment.to_h
+end
+
+def resolve_house_assignment(player_options, taken_houses)
+  return [] if player_options.empty?
+
+  player, available_houses = player_options.first
+
+  available_houses.each do |house|
+    next if taken_houses.include?(house)
+
+    assignment = resolve_house_assignment(player_options.drop(1), taken_houses + [ house ])
+    return [ [ player.id, house ], *assignment ] if assignment
+  end
+
+  nil
+end
+
 # Rules page
 rules_content = <<~RULES
   🏆 РЕГЛАМЕНТ ТУРНИРА v1.25
@@ -167,6 +196,7 @@ puts "#{Game.count} games created"
 # Test results for tours 1-3
 rng = Random.new(42)
 shuffled_players = players.shuffle(random: rng)
+used_houses_by_player = Hash.new { |hash, key| hash[key] = [] }
 
 (0..2).each do |tour_idx|
   tour = tours[tour_idx]
@@ -175,6 +205,7 @@ shuffled_players = players.shuffle(random: rng)
   tour.games.ordered.each_with_index do |game, table_idx|
     table_players = tour_players[table_idx * 7, 7]
     next unless table_players&.size == 7
+    house_assignment = assign_houses_for_players(table_players, used_houses_by_player, rng)
 
     table_players.each_with_index do |player, place_idx|
       place = place_idx + 1
@@ -187,8 +218,10 @@ shuffled_players = players.shuffle(random: rng)
       gr.capitals = capitals
       gr.dragons = dragons
       gr.castles = castles
+      gr.house = house_assignment.fetch(player.id)
       gr.points = GameResult::PLACE_POINTS.fetch(place, 0) + (capitals * 2) + dragons + castles
       gr.save!
+      used_houses_by_player[player.id] |= [ gr.house ]
     end
   end
 end

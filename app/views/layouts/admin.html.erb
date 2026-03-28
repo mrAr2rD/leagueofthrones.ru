@@ -9,25 +9,32 @@
     <%= javascript_importmap_tags %>
   </head>
 
-  <body class="bg-gray-50 min-h-screen">
+  <body class="bg-gray-50 min-h-screen overflow-x-hidden">
     <nav class="bg-gray-900 text-white">
-      <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-        <div class="flex items-center gap-6">
-          <span class="font-bold text-lg">⚔️ Админ-панель</span>
+      <div class="max-w-5xl mx-auto px-4 py-3">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div class="min-w-0 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-6">
+            <span class="font-bold text-lg leading-tight">⚔️ Админ-панель</span>
+            <% if current_admin %>
+              <div class="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+                <%= link_to "Игроки", admin_players_path, class: "hover:text-yellow-300" %>
+                <%= link_to "Туры", admin_tours_path, class: "hover:text-yellow-300" %>
+                <%= link_to "Правила", admin_edit_page_path("rules"), class: "hover:text-yellow-300" %>
+                <%= link_to "← На сайт", root_path, class: "hover:text-yellow-300" %>
+              </div>
+            <% end %>
+          </div>
+
           <% if current_admin %>
-            <%= link_to "Игроки", admin_players_path, class: "hover:text-yellow-300 text-sm" %>
-            <%= link_to "Туры", admin_tours_path, class: "hover:text-yellow-300 text-sm" %>
-            <%= link_to "Правила", admin_edit_page_path("rules"), class: "hover:text-yellow-300 text-sm" %>
-            <%= link_to "← На сайт", root_path, class: "hover:text-yellow-300 text-sm" %>
+            <div class="shrink-0">
+              <%= button_to "Выйти", admin_logout_path, method: :delete, class: "text-sm text-red-300 hover:text-red-100", form_class: "inline-block" %>
+            </div>
           <% end %>
         </div>
-        <% if current_admin %>
-          <%= button_to "Выйти", admin_logout_path, method: :delete, class: "text-sm text-red-300 hover:text-red-100" %>
-        <% end %>
       </div>
     </nav>
 
-    <div class="max-w-5xl mx-auto px-4 py-6">
+    <div class="max-w-5xl mx-auto px-4 py-6 overflow-x-hidden">
       <% if flash[:notice] %>
         <div class="bg-green-100 border border-green-300 text-green-800 px-4 py-2 rounded mb-4"><%= flash[:notice] %></div>
       <% end %>

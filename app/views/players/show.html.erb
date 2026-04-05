@@ -44,8 +44,8 @@
           <span class="player-summary-label">Очки</span>
         </div>
         <div class="player-summary-item">
-          <span class="player-summary-value"><%= @results.sum(&:effective_capitals) %></span>
-          <span class="player-summary-label">Столицы</span>
+          <span class="player-summary-value"><%= @results.sum(&:ranking_captures) %></span>
+          <span class="player-summary-label">Захваты</span>
         </div>
         <div class="player-summary-item">
           <span class="player-summary-value"><%= @results.sum { |r| r.dragons || 0 } %></span>
@@ -86,7 +86,7 @@
                   <% end %>
                 </td>
                 <td style="font-weight: bold; color: var(--gold);"><%= r.points %></td>
-                <td><%= r.effective_capitals %></td>
+                <td><%= r.ranking_captures %></td>
                 <td><%= r.dragons %></td>
                 <td><%= r.castles %></td>
               </tr>

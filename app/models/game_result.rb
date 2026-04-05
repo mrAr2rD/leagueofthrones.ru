@@ -23,6 +23,8 @@ class GameResult < ApplicationRecord
   validates :points, numericality: { only_integer: true }, allow_nil: true
   validates :capitals, :dragons, :castles,
             numericality: { greater_than_or_equal_to: 0, only_integer: true }, allow_nil: true
+  validates :capital_captures, :capital_controls, :lands, :skulls,
+            numericality: { greater_than_or_equal_to: 0, only_integer: true }, allow_nil: true
   validates :house,
             presence: { message: "должен быть выбран для занятого слота" },
             if: :player_id?
@@ -43,7 +45,21 @@ class GameResult < ApplicationRecord
     HOUSE_OPTIONS.reject { |(_label, key)| used_houses.include?(key) }
   end
 
-  def self.calculate_points(place:, capitals:, dragons:, castles:, table_letter:)
+  def self.effective_capitals(capitals:, capital_captures: nil, capital_controls: nil)
+    return capitals.to_i if capital_captures.nil? && capital_controls.nil?
+
+    capital_captures.to_i + capital_controls.to_i
+  end
+
+  def self.capital_points(capitals:, capital_captures: nil, capital_controls: nil)
+    [ effective_capitals(
+      capitals: capitals,
+      capital_captures: capital_captures,
+      capital_controls: capital_controls
+    ), MAX_CAPITAL_POINTS ].min
+  end
+
+  def self.calculate_points(place:, capitals: 0, capital_captures: nil, capital_controls: nil, dragons:, castles:, table_letter:)
     normalized_place = place.to_i
     return nil if normalized_place <= 0
 
@@ -51,13 +67,37 @@ class GameResult < ApplicationRecord
     table_bonus = table_letter == "A" && TABLE_A_BONUS_PLACES.include?(normalized_place) ? 1 : 0
 
     place_points + table_bonus +
-      [ capitals.to_i, MAX_CAPITAL_POINTS ].min +
+      capital_points(
+        capitals: capitals,
+        capital_captures: capital_captures,
+        capital_controls: capital_controls
+      ) +
       dragons.to_i +
       [ castles.to_i, MAX_CASTLES_POINTS ].min
   end
 
   def suggested_points
     calculated_points || 0
+  end
+
+  def effective_capitals
+    self.class.effective_capitals(
+      capitals: capitals,
+      capital_captures: capital_captures,
+      capital_controls: capital_controls
+    )
+  end
+
+  def capital_bonus_points
+    self.class.capital_points(
+      capitals: capitals,
+      capital_captures: capital_captures,
+      capital_controls: capital_controls
+    )
+  end
+
+  def using_legacy_capitals?
+    capital_captures.nil? && capital_controls.nil?
   end
 
   def house_name
@@ -70,6 +110,8 @@ class GameResult < ApplicationRecord
     self.class.calculate_points(
       place: place,
       capitals: capitals,
+      capital_captures: capital_captures,
+      capital_controls: capital_controls,
       dragons: dragons,
       castles: castles,
       table_letter: game&.table_letter

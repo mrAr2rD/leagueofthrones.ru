@@ -35,6 +35,8 @@ export default class extends Controller {
     const suggestedEl = row.querySelector("[data-points-calculator-target='suggested']")
     const pointsEl = row.querySelector("[data-points-calculator-target='points']")
 
+    this.toggleLegacyNotice(row)
+
     if (suggested === null) {
       if (suggestedEl) suggestedEl.textContent = "—"
       if (pointsEl) pointsEl.value = ""
@@ -66,7 +68,7 @@ export default class extends Controller {
     const place = parseInt(row.querySelector("[data-points-calculator-target='place']")?.value) || 0
     if (place <= 0) return null
 
-    const capitals = parseInt(row.querySelector("[data-points-calculator-target='capitals']")?.value) || 0
+    const capitals = this.effectiveCapitalsFor(row)
     const dragons = parseInt(row.querySelector("[data-points-calculator-target='dragons']")?.value) || 0
     const castles = parseInt(row.querySelector("[data-points-calculator-target='castles']")?.value) || 0
 
@@ -74,6 +76,31 @@ export default class extends Controller {
     const tableBonus = this.tableLetterValue === "A" && TABLE_A_BONUS_PLACES.has(place) ? 1 : 0
 
     return base + tableBonus + Math.min(capitals, MAX_CAPITAL_POINTS) + dragons + Math.min(castles, MAX_CASTLES_POINTS)
+  }
+
+  effectiveCapitalsFor(row) {
+    if (this.usesLegacyCapitals(row)) {
+      return parseInt(row.querySelector("[data-points-calculator-target='legacyCapitals']")?.value) || 0
+    }
+
+    return (
+      (this.integerValue(row.querySelector("[data-points-calculator-target='capitalCaptures']")?.value) || 0) +
+      (this.integerValue(row.querySelector("[data-points-calculator-target='capitalControls']")?.value) || 0)
+    )
+  }
+
+  usesLegacyCapitals(row) {
+    const captures = row.querySelector("[data-points-calculator-target='capitalCaptures']")?.value
+    const controls = row.querySelector("[data-points-calculator-target='capitalControls']")?.value
+
+    return this.integerValue(captures) === null && this.integerValue(controls) === null
+  }
+
+  toggleLegacyNotice(row) {
+    const notice = row.querySelector("[data-points-calculator-target='legacyNotice']")
+    if (!notice) return
+
+    notice.classList.toggle("hidden", !this.usesLegacyCapitals(row))
   }
 
   manualAdjustmentFor(row) {

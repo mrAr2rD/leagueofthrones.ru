@@ -59,7 +59,7 @@ class RankingCalculator
       total_points: points_list.sum,
       best6_points: best6,
       wins: results.count { |r| r.place == 1 },
-      capitals: results.sum { |r| r.capitals || 0 },
+      capitals: results.sum(&:effective_capitals),
       dragons: results.sum { |r| r.dragons || 0 },
       games_played: results.size,
       rank: 0,

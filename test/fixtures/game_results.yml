@@ -24,6 +24,10 @@ cersei_game1:
   house: targaryen
   place: 1
   points: 14
-  capitals: 1
+  capitals: 0
+  capital_captures: 1
+  capital_controls: 0
+  lands: 7
+  skulls: 1
   dragons: 1
   castles: 0

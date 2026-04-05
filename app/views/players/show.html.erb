@@ -44,7 +44,7 @@
           <span class="player-summary-label">Очки</span>
         </div>
         <div class="player-summary-item">
-          <span class="player-summary-value"><%= @results.sum { |r| r.capitals || 0 } %></span>
+          <span class="player-summary-value"><%= @results.sum(&:effective_capitals) %></span>
           <span class="player-summary-label">Столицы</span>
         </div>
         <div class="player-summary-item">
@@ -86,7 +86,7 @@
                   <% end %>
                 </td>
                 <td style="font-weight: bold; color: var(--gold);"><%= r.points %></td>
-                <td><%= r.capitals %></td>
+                <td><%= r.effective_capitals %></td>
                 <td><%= r.dragons %></td>
                 <td><%= r.castles %></td>
               </tr>

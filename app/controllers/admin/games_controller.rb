@@ -1,6 +1,9 @@
 module Admin
   class GamesController < BaseController
-    RESULT_ATTRIBUTES = %w[player_id house place points capitals dragons castles].freeze
+    RESULT_ATTRIBUTES = %w[
+      player_id house place points capitals capital_captures capital_controls
+      lands skulls dragons castles
+    ].freeze
 
     before_action :set_tour_and_game
     before_action :load_form_options, only: [ :edit, :update ]

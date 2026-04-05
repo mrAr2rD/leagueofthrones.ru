@@ -12,9 +12,54 @@ class GameResultTest < ActiveSupport::TestCase
     assert_not gr.valid?
   end
 
-  test "suggested_points follows published rules for table A" do
+  test "effective capitals falls back to legacy capitals when new fields are nil" do
+    gr = game_results(:daenerys_game1)
+
+    assert gr.using_legacy_capitals?
+    assert_equal 2, gr.effective_capitals
+    assert_equal 2, gr.capital_bonus_points
+  end
+
+  test "effective capitals uses split fields once any new field is present" do
+    gr = game_results(:cersei_game1)
+
+    assert_not gr.using_legacy_capitals?
+    assert_equal 1, gr.effective_capitals
+    assert_equal 1, gr.capital_bonus_points
+  end
+
+  test "suggested_points uses legacy capitals when split fields are blank" do
     gr = GameResult.new(game: games(:game_1a), place: 1, capitals: 2, dragons: 1, castles: 0)
+
     assert_equal 16, gr.suggested_points
+  end
+
+  test "suggested_points uses split capitals instead of legacy value" do
+    gr = GameResult.new(
+      game: games(:game_1a),
+      place: 1,
+      capitals: 99,
+      capital_captures: 1,
+      capital_controls: 1,
+      dragons: 1,
+      castles: 0
+    )
+
+    assert_equal 16, gr.suggested_points
+  end
+
+  test "suggested_points treats blank split capital half as zero" do
+    gr = GameResult.new(
+      game: games(:game_1a),
+      place: 2,
+      capitals: 99,
+      capital_captures: nil,
+      capital_controls: 2,
+      dragons: 0,
+      castles: 2
+    )
+
+    assert_equal 12, gr.suggested_points
   end
 
   test "suggested_points for last place without bonuses" do
@@ -22,8 +67,16 @@ class GameResultTest < ActiveSupport::TestCase
     assert_equal 1, gr.suggested_points
   end
 
-  test "suggested_points caps capital and castle bonuses" do
-    gr = GameResult.new(game: games(:game_1a), place: 3, capitals: 7, dragons: 2, castles: 9)
+  test "suggested_points caps split capital and castle bonuses" do
+    gr = GameResult.new(
+      game: games(:game_1a),
+      place: 3,
+      capital_captures: 3,
+      capital_controls: 2,
+      dragons: 2,
+      castles: 9
+    )
+
     assert_equal 17, gr.suggested_points
   end
 
@@ -35,7 +88,8 @@ class GameResultTest < ActiveSupport::TestCase
       house: "baratheon",
       place: 2,
       points: 999,
-      capitals: 1,
+      capital_captures: 1,
+      capital_controls: 0,
       dragons: 0,
       castles: 2
     )
@@ -45,20 +99,16 @@ class GameResultTest < ActiveSupport::TestCase
     assert_equal 11, gr.suggested_points
   end
 
-  test "capital values above scoring cap are still valid" do
+  test "split bonus fields must be non-negative integers" do
     gr = game_results(:daenerys_game1)
-    gr.capitals = 10
+    gr.capital_captures = -1
+    gr.lands = -2
+    gr.skulls = -3
 
-    assert gr.valid?
-    assert_equal 17, gr.suggested_points
-  end
-
-  test "castle values above scoring cap are still valid" do
-    gr = game_results(:daenerys_game1)
-    gr.castles = 10
-
-    assert gr.valid?
-    assert_equal 21, gr.suggested_points
+    assert_not gr.valid?
+    assert_includes gr.errors[:capital_captures], "must be greater than or equal to 0"
+    assert_includes gr.errors[:lands], "must be greater than or equal to 0"
+    assert_includes gr.errors[:skulls], "must be greater than or equal to 0"
   end
 
   test "house must be one of allowed values" do

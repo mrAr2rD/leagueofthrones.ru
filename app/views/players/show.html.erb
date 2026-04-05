@@ -66,6 +66,7 @@
             <tr>
               <th class="text-left">Тур</th>
               <th class="text-center">Стол</th>
+              <th class="text-left">Дом</th>
               <th class="text-center"><span class="icon-shield"></span> Место</th>
               <th class="text-center">Очки</th>
               <th class="text-center"><span class="icon-crown"></span></th>
@@ -76,8 +77,9 @@
           <tbody>
             <% @results.each do |r| %>
               <tr>
-                <td class="text-left" style="font-family: var(--font-pixel); font-size: 10px;">Тур <%= r.game.tour.number %></td>
+                <td class="text-left player-stats-tour"><%= r.game.tour.number %></td>
                 <td><%= r.game.table_letter %></td>
+                <td class="text-left player-stats-house"><%= r.house_name || "—" %></td>
                 <td>
                   <% if r.place == 1 %>
                     <span style="color: var(--gold); font-weight: bold;"><span class="icon-crown"></span><%= r.place %></span>
@@ -88,7 +90,7 @@
                 <td style="font-weight: bold; color: var(--gold);"><%= r.points %></td>
                 <td><%= r.ranking_captures %></td>
                 <td><%= r.dragons %></td>
-                <td><%= r.castles %></td>
+                <td><%= r.ranking_captures %></td>
               </tr>
             <% end %>
           </tbody>

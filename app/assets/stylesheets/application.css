@@ -768,6 +768,15 @@ body.pixel-realm::after {
   text-align: center;
   color: var(--ink);
 }
+.player-stats-tour,
+.player-stats-house {
+  font-family: var(--font-pixel);
+  font-size: 9px;
+  line-height: 1.4;
+}
+.player-stats-house {
+  white-space: nowrap;
+}
 .player-stats-table tbody tr:hover {
   background: rgba(232, 184, 48, 0.05);
 }

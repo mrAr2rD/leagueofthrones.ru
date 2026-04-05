@@ -76,6 +76,8 @@ The seed script creates:
 - 8 tours
 - 4 games per tour (`A` to `D`)
 - demo game results for the first tours
+- mixed legacy/split capital bonus cases in tour 1, table A
+- admin-focused corner cases in tour 4, tables A and B
 
 Run:
 
@@ -118,6 +120,7 @@ bin/ci
 ### Admin game result editor
 If you change result editing behavior, check these files together:
 - [`app/views/admin/games/edit.html.erb`](app/views/admin/games/edit.html.erb)
+- [`app/javascript/controllers/points_calculator_controller.js`](app/javascript/controllers/points_calculator_controller.js)
 - [`app/javascript/controllers/slot_toggle_controller.js`](app/javascript/controllers/slot_toggle_controller.js)
 - [`app/controllers/admin/games_controller.rb`](app/controllers/admin/games_controller.rb)
 - [`app/models/game_result.rb`](app/models/game_result.rb)
@@ -143,6 +146,9 @@ Relevant tests:
 - A player can appear only once per tour, even across different tables.
 - Houses must be unique within a game.
 - A player cannot reuse the same house across games.
+- `capitals` is a legacy field. New records may use `capital_captures` and `capital_controls`; when both are `nil`, scoring and ranking fall back to legacy `capitals`.
+- Capital bonus points are still capped at 3 per game, using `min(effective_capitals, 3)`.
+- `lands` and `skulls` are stored in `GameResult` for future tournament rules but do not affect public ranking yet.
 - Rankings are recalculated after result updates.
 - `place` may be empty for draft table assignments.
 

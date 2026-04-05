@@ -146,9 +146,11 @@ Relevant tests:
 - A player can appear only once per tour, even across different tables.
 - Houses must be unique within a game.
 - A player cannot reuse the same house across games.
-- `capitals` is a legacy field. New records may use `capital_captures` and `capital_controls`; when both are `nil`, scoring and ranking fall back to legacy `capitals`.
+- `capitals` is a legacy field. New records may use `capital_captures` and `capital_controls`; when both are `nil`, scoring falls back to legacy `capitals`, and ranking captures also fall back to legacy `capitals`.
 - Capital bonus points are still capped at 3 per game, using `min(effective_capitals, 3)`.
-- `lands` and `skulls` are stored in `GameResult` for future tournament rules but do not affect public ranking yet.
+- Public leaderboard tie-break order is: `best6_points`, `wins`, ranking `captures`, `dragons`, `lands`.
+- Ranking `captures` use `capital_captures` for split-format rows and ignore `capital_controls`; legacy rows use `capitals` as the captures fallback.
+- `skulls` are stored in `GameResult` for future tournament rules but do not affect public ranking.
 - Rankings are recalculated after result updates.
 - `place` may be empty for draft table assignments.
 

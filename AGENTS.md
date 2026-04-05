@@ -108,7 +108,8 @@ Seeded admin credentials:
 - Capital bonus points are capped at 3, but ranking tie-break does not use `effective_capitals`.
 - Ranking tie-break order is `best6_points`, `wins`, ranking `captures`, `dragons`, `lands`.
 - Ranking `captures` use legacy `capitals` only when both split capital fields are `NULL`; otherwise they use only `capital_captures` and ignore `capital_controls`.
-- Public player profile history should stay consistent with leaderboard wording and ranking data: use `Захваты`/`ranking_captures`, and render the played house via `house_name`.
+- Public player profile should stay consistent with leaderboard wording and ranking data in its captures fields, and render the played house via `house_name`.
+- In player match history, keep `ranking_captures` in the captures column and keep castles in the rightmost castle-icon column.
 - `skulls` are stored for future rules but do not affect ranking yet.
 - `place` may be `NULL` for draft assignments; points and ranking logic only consider meaningful filled results.
 - Ranking is recalculated after saving game results.

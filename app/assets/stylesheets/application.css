@@ -165,6 +165,19 @@ body.pixel-realm::after {
   background-repeat: no-repeat;
 }
 
+/* Capture icon */
+.icon-capture::before {
+  content: '';
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  margin-right: 2px;
+  vertical-align: middle;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='2' y='1' width='2' height='13' fill='%23a07820'/%3E%3Crect x='3' y='1' width='1' height='13' fill='%23ffd54f'/%3E%3Crect x='4' y='2' width='8' height='2' fill='%23c83030'/%3E%3Crect x='4' y='4' width='6' height='2' fill='%23e85050'/%3E%3Crect x='4' y='6' width='8' height='2' fill='%23c83030'/%3E%3Crect x='4' y='8' width='5' height='2' fill='%23e85050'/%3E%3Crect x='4' y='10' width='3' height='2' fill='%23c83030'/%3E%3Crect x='1' y='13' width='4' height='2' fill='%23e8b830'/%3E%3Crect x='5' y='13' width='2' height='2' fill='%23a07820'/%3E%3Crect x='11' y='3' width='1' height='1' fill='%23ffd54f'/%3E%3Crect x='9' y='5' width='1' height='1' fill='%23ffd54f'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+}
+
 /* Sword icon */
 .icon-sword::before {
   content: '';
@@ -748,34 +761,110 @@ body.pixel-realm::after {
 .player-stats-table {
   width: 100%;
   font-family: var(--font-terminal);
-  font-size: 18px;
-  margin-top: 1rem;
+  font-size: 16px;
+  margin: 1rem 0 0;
+  min-width: 502px;
   border-collapse: separate;
   border-spacing: 0;
+  table-layout: fixed;
+  max-width: 100%;
+}
+.player-stats-col-tour {
+  width: 36px;
+}
+.player-stats-col-table {
+  width: 40px;
+}
+.player-stats-col-house {
+  width: 104px;
+}
+.player-stats-col-place {
+  width: 68px;
+}
+.player-stats-col-points {
+  width: 54px;
+}
+.player-stats-col-stat {
+  width: 44px;
 }
 .player-stats-table thead th {
   font-family: var(--font-pixel);
   font-size: 7px;
   color: var(--gold);
-  padding: 8px 6px;
+  padding: 10px 8px 12px;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
   border-bottom: 2px solid var(--gold-dim);
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: middle;
 }
 .player-stats-table tbody td {
-  padding: 6px;
+  padding: 11px 8px;
   border-bottom: 1px solid rgba(106, 90, 64, 0.2);
   text-align: center;
   color: var(--ink);
+  vertical-align: middle;
+  line-height: 1.2;
 }
+.player-stats-header-left,
 .player-stats-tour,
 .player-stats-house {
+  text-align: left !important;
+}
+.player-stats-tour,
+.player-stats-house,
+.player-stats-place-first {
   font-family: var(--font-pixel);
-  font-size: 9px;
+  font-size: 8px;
   line-height: 1.4;
 }
 .player-stats-house {
+  padding-left: 12px !important;
   white-space: nowrap;
+}
+.player-stats-tour {
+  padding-left: 12px !important;
+}
+.player-stats-points {
+  font-weight: bold;
+  color: var(--gold) !important;
+}
+.player-stats-heading,
+.player-stats-heading-icon,
+.player-stats-place {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.player-stats-heading {
+  gap: 4px;
+}
+.player-stats-heading-icon {
+  min-width: 12px;
+}
+.player-stats-heading .icon-shield::before,
+.player-stats-heading-icon .icon-capture::before,
+.player-stats-heading-icon .icon-dragon::before,
+.player-stats-heading-icon .icon-castle::before,
+.player-stats-place .icon-crown::before {
+  margin-right: 0;
+  width: 10px;
+  height: 10px;
+}
+.player-stats-heading-icon .icon-castle::before {
+  width: 11px;
+}
+.player-stats-place {
+  min-width: 18px;
+}
+.player-stats-place-first {
+  color: var(--gold);
+  gap: 3px;
+}
+.player-stats-place-cell {
+  padding-left: 6px;
+  padding-right: 6px;
 }
 .player-stats-table tbody tr:hover {
   background: rgba(232, 184, 48, 0.05);
@@ -855,6 +944,60 @@ body.pixel-realm::after {
   }
   .player-nick {
     font-size: 7px;
+  }
+  .player-stats-table {
+    width: auto;
+    min-width: 346px;
+    font-size: 14px;
+    margin: 1rem auto 0;
+  }
+  .player-stats-col-tour {
+    width: 28px;
+  }
+  .player-stats-col-table {
+    width: 30px;
+  }
+  .player-stats-col-house {
+    width: 78px;
+  }
+  .player-stats-col-place {
+    width: 54px;
+  }
+  .player-stats-col-points {
+    width: 42px;
+  }
+  .player-stats-col-stat {
+    width: 28px;
+  }
+  .player-stats-table thead th {
+    font-size: 5px;
+    padding: 8px 5px 10px;
+  }
+  .player-stats-table tbody td {
+    padding: 9px 5px;
+  }
+  .player-stats-tour,
+  .player-stats-house,
+  .player-stats-place-first {
+    font-size: 7px;
+  }
+  .player-stats-house,
+  .player-stats-tour {
+    padding-left: 8px !important;
+  }
+  .player-stats-heading {
+    gap: 3px;
+  }
+  .player-stats-heading .icon-shield::before,
+  .player-stats-heading-icon .icon-capture::before,
+  .player-stats-heading-icon .icon-dragon::before,
+  .player-stats-heading-icon .icon-castle::before,
+  .player-stats-place .icon-crown::before {
+    width: 9px;
+    height: 9px;
+  }
+  .player-stats-heading-icon .icon-castle::before {
+    width: 10px;
   }
 }
 

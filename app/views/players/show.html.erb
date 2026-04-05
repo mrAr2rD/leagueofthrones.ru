@@ -62,35 +62,65 @@
 
       <div class="league-table-wrap">
         <table class="player-stats-table">
+          <colgroup>
+            <col class="player-stats-col-tour">
+            <col class="player-stats-col-table">
+            <col class="player-stats-col-house">
+            <col class="player-stats-col-place">
+            <col class="player-stats-col-points">
+            <col class="player-stats-col-stat">
+            <col class="player-stats-col-stat">
+            <col class="player-stats-col-stat">
+          </colgroup>
           <thead>
             <tr>
-              <th class="text-left">Тур</th>
-              <th class="text-center">Стол</th>
-              <th class="text-left">Дом</th>
-              <th class="text-center"><span class="icon-shield"></span> Место</th>
-              <th class="text-center">Очки</th>
-              <th class="text-center"><span class="icon-crown"></span></th>
-              <th class="text-center"><span class="icon-dragon"></span></th>
-              <th class="text-center"><span class="icon-castle"></span></th>
+              <th class="player-stats-header-left">Тур</th>
+              <th>Стол</th>
+              <th class="player-stats-header-left">Дом</th>
+              <th>
+                <span class="player-stats-heading">
+                  <span class="icon-shield"></span>
+                  <span>Место</span>
+                </span>
+              </th>
+              <th>Очки</th>
+              <th>
+                <span class="player-stats-heading-icon">
+                  <span class="icon-capture"></span>
+                </span>
+              </th>
+              <th>
+                <span class="player-stats-heading-icon">
+                  <span class="icon-dragon"></span>
+                </span>
+              </th>
+              <th>
+                <span class="player-stats-heading-icon">
+                  <span class="icon-castle"></span>
+                </span>
+              </th>
             </tr>
           </thead>
           <tbody>
             <% @results.each do |r| %>
               <tr>
-                <td class="text-left player-stats-tour"><%= r.game.tour.number %></td>
+                <td class="player-stats-tour"><%= r.game.tour.number %></td>
                 <td><%= r.game.table_letter %></td>
-                <td class="text-left player-stats-house"><%= r.house_name || "—" %></td>
-                <td>
+                <td class="player-stats-house"><%= r.house_name || "—" %></td>
+                <td class="player-stats-place-cell">
                   <% if r.place == 1 %>
-                    <span style="color: var(--gold); font-weight: bold;"><span class="icon-crown"></span><%= r.place %></span>
+                    <span class="player-stats-place player-stats-place-first">
+                      <span class="icon-crown"></span>
+                      <span><%= r.place %></span>
+                    </span>
                   <% else %>
-                    <%= r.place %>
+                    <span class="player-stats-place"><%= r.place %></span>
                   <% end %>
                 </td>
-                <td style="font-weight: bold; color: var(--gold);"><%= r.points %></td>
+                <td class="player-stats-points"><%= r.points %></td>
                 <td><%= r.ranking_captures %></td>
                 <td><%= r.dragons %></td>
-                <td><%= r.ranking_captures %></td>
+                <td><%= r.castles %></td>
               </tr>
             <% end %>
           </tbody>

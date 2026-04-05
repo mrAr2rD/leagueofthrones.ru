@@ -1,4 +1,5 @@
 require "test_helper"
+require "date"
 
 class PlayersControllerTest < ActionDispatch::IntegrationTest
   test "should get show" do
@@ -7,7 +8,7 @@ class PlayersControllerTest < ActionDispatch::IntegrationTest
     assert_match "Семён", response.body
   end
 
-  test "show uses captures wording and ranking captures values" do
+  test "show uses captures wording and history values" do
     player = Player.create!(first_name: "Профиль", nickname: "@profile_captures")
     tour = tours(:tour_two)
     game = Game.create!(tour: tour, table_letter: "A")
@@ -42,6 +43,7 @@ class PlayersControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_match "Дом", response.body
     assert_match "Захваты", response.body
+    assert_match "icon-capture", response.body
     assert_no_match "Столицы", response.body
 
     document = Nokogiri::HTML(response.body)
@@ -53,8 +55,8 @@ class PlayersControllerTest < ActionDispatch::IntegrationTest
     assert_includes summary_cards, "1 Захваты"
     assert_equal [ "2", "A", "Старк" ], history_rows.first.first(3)
     assert_equal "1", history_rows.first[5]
-    assert_equal "1", history_rows.first[7]
+    assert_equal "4", history_rows.first[7]
     assert_equal [ "3", "A", "Таргариен" ], history_rows.second.first(3)
-    assert_equal "0", history_rows.second[7]
+    assert_equal "2", history_rows.second[7]
   end
 end

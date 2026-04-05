@@ -33,6 +33,77 @@ def resolve_house_assignment(player_options, taken_houses)
   nil
 end
 
+def suggested_points_for_seed(game:, place:, capitals:, capital_captures:, capital_controls:, dragons:, castles:)
+  GameResult.calculate_points(
+    place: place,
+    capitals: capitals,
+    capital_captures: capital_captures,
+    capital_controls: capital_controls,
+    dragons: dragons,
+    castles: castles,
+    table_letter: game.table_letter
+  )
+end
+
+def apply_case_attributes!(result, attrs)
+  result.place = attrs[:place]
+  result.capitals = attrs.fetch(:capitals, 0)
+  result.capital_captures = attrs[:capital_captures]
+  result.capital_controls = attrs[:capital_controls]
+  result.lands = attrs[:lands]
+  result.skulls = attrs[:skulls]
+  result.dragons = attrs.fetch(:dragons, 0)
+  result.castles = attrs.fetch(:castles, 0)
+
+  suggested_points = suggested_points_for_seed(
+    game: result.game,
+    place: result.place,
+    capitals: result.capitals,
+    capital_captures: result.capital_captures,
+    capital_controls: result.capital_controls,
+    dragons: result.dragons,
+    castles: result.castles
+  )
+
+  result.points = if attrs.key?(:points)
+    attrs[:points]
+  elsif attrs.key?(:manual_offset)
+    suggested_points.nil? ? nil : suggested_points + attrs[:manual_offset]
+  else
+    suggested_points
+  end
+
+  result.save!
+end
+
+def overwrite_existing_results_with_cases!(game:, cases:)
+  results = game.game_results.order(:place).to_a
+  raise "Недостаточно результатов в #{game.tour.number}#{game.table_letter} для кейсов" if results.size < cases.size
+
+  results.zip(cases).each do |result, attrs|
+    apply_case_attributes!(result, attrs)
+    puts "Public case T#{game.tour.number}#{game.table_letter}: #{result.player.nickname} — #{attrs.fetch(:label)}"
+  end
+end
+
+def seed_case_game!(game:, players:, cases:, used_houses_by_player:, rng:)
+  raise "Число игроков и кейсов должно совпадать" unless players.size == cases.size
+
+  game.game_results.delete_all
+  house_assignment = assign_houses_for_players(players, used_houses_by_player, rng)
+
+  players.zip(cases).each do |player, attrs|
+    result = GameResult.new(
+      game: game,
+      player: player,
+      house: house_assignment.fetch(player.id)
+    )
+    apply_case_attributes!(result, attrs)
+    used_houses_by_player[player.id] |= [ result.house ]
+    puts "Admin case T#{game.tour.number}#{game.table_letter}: #{player.nickname} — #{attrs.fetch(:label)}"
+  end
+end
+
 # Rules page
 rules_content = <<~RULES
   🏆 РЕГЛАМЕНТ ТУРНИРА v1.25
@@ -213,19 +284,27 @@ used_houses_by_player = Hash.new { |hash, key| hash[key] = [] }
 
     table_players.each_with_index do |player, place_idx|
       place = place_idx + 1
-      capitals = rng.rand(0..5)
+      capital_captures = rng.rand(0..2)
+      capital_controls = rng.rand(0..2)
+      lands = rng.rand(0..15)
+      skulls = rng.rand(0..4)
       dragons = rng.rand(0..2)
       castles = rng.rand(0..7)
 
       gr = GameResult.find_or_initialize_by(game: game, player: player)
       gr.place = place
-      gr.capitals = capitals
+      gr.capital_captures = capital_captures
+      gr.capital_controls = capital_controls
+      gr.lands = lands
+      gr.skulls = skulls
       gr.dragons = dragons
       gr.castles = castles
       gr.house = house_assignment.fetch(player.id)
       gr.points = GameResult.calculate_points(
         place: place,
-        capitals: capitals,
+        capitals: gr.capitals,
+        capital_captures: capital_captures,
+        capital_controls: capital_controls,
         dragons: dragons,
         castles: castles,
         table_letter: game.table_letter
@@ -236,6 +315,62 @@ used_houses_by_player = Hash.new { |hash, key| hash[key] = [] }
   end
 end
 puts "Game results seeded for tours 1-3"
+
+public_corner_case_game = tours[0].games.find_by!(table_letter: "A")
+public_corner_cases = [
+  { label: "legacy_only_zero", place: 1, capitals: 0, capital_captures: nil, capital_controls: nil, lands: nil, skulls: nil, dragons: 0, castles: 0 },
+  { label: "legacy_only_positive", place: 2, capitals: 2, capital_captures: nil, capital_controls: nil, lands: 6, skulls: 1, dragons: 0, castles: 1 },
+  { label: "legacy_only_above_cap", place: 3, capitals: 5, capital_captures: nil, capital_controls: nil, lands: 8, skulls: 2, dragons: 1, castles: 2 },
+  { label: "split_controls_only_overrides_legacy", place: 4, capitals: 3, capital_captures: nil, capital_controls: 1, lands: 9, skulls: 0, dragons: 0, castles: 3 },
+  { label: "split_captures_only_overrides_legacy", place: 5, capitals: 4, capital_captures: 2, capital_controls: nil, lands: 10, skulls: 1, dragons: 2, castles: 0 },
+  { label: "split_zeroes_override_legacy", place: 6, capitals: 3, capital_captures: 0, capital_controls: 0, lands: 11, skulls: 2, dragons: 0, castles: 4 },
+  { label: "split_sum_under_cap", place: 7, capitals: 1, capital_captures: 1, capital_controls: 1, lands: 12, skulls: 3, dragons: 1, castles: 5 },
+  { label: "split_sum_over_cap", place: 8, capitals: 0, capital_captures: 3, capital_controls: 2, lands: 13, skulls: 4, dragons: 0, castles: 6 }
+]
+overwrite_existing_results_with_cases!(game: public_corner_case_game, cases: public_corner_cases)
+puts "Public mixed-format corner cases seeded in tour 1 table A"
+
+admin_corner_case_game_a = tours[3].games.find_by!(table_letter: "A")
+admin_corner_case_players_a = players[16, 8]
+admin_corner_cases_a = [
+  { label: "blank_new_fields_plus_legacy_zero", place: 1, capitals: 0, capital_captures: nil, capital_controls: nil, lands: nil, skulls: nil, dragons: 0, castles: 0 },
+  { label: "blank_new_fields_plus_legacy_two", place: 2, capitals: 2, capital_captures: nil, capital_controls: nil, lands: nil, skulls: nil, dragons: 0, castles: 1 },
+  { label: "blank_new_fields_plus_legacy_five", place: 3, capitals: 5, capital_captures: nil, capital_controls: nil, lands: nil, skulls: nil, dragons: 1, castles: 2 },
+  { label: "blank_captures_filled_controls_legacy_four", place: 4, capitals: 4, capital_captures: nil, capital_controls: 2, lands: 7, skulls: 1, dragons: 0, castles: 2 },
+  { label: "filled_captures_blank_controls_legacy_four", place: 5, capitals: 4, capital_captures: 2, capital_controls: nil, lands: 8, skulls: 2, dragons: 1, castles: 1 },
+  { label: "explicit_zeroes_override_legacy_three", place: 6, capitals: 3, capital_captures: 0, capital_controls: 0, lands: 0, skulls: 0, dragons: 0, castles: 0 },
+  { label: "explicit_zero_capture_blank_control", place: 7, capitals: 3, capital_captures: 0, capital_controls: nil, lands: 1, skulls: 0, dragons: 0, castles: 0 },
+  { label: "blank_capture_explicit_zero_control", place: 8, capitals: 3, capital_captures: nil, capital_controls: 0, lands: 2, skulls: 0, dragons: 0, castles: 0 }
+]
+seed_case_game!(
+  game: admin_corner_case_game_a,
+  players: admin_corner_case_players_a,
+  cases: admin_corner_cases_a,
+  used_houses_by_player: used_houses_by_player,
+  rng: rng
+)
+puts "Admin corner cases seeded in tour 4 table A"
+
+admin_corner_case_game_b = tours[3].games.find_by!(table_letter: "B")
+admin_corner_case_players_b = players[24, 8]
+admin_corner_cases_b = [
+  { label: "draft_legacy_only", place: nil, points: nil, capitals: 2, capital_captures: nil, capital_controls: nil, lands: nil, skulls: nil, dragons: 0, castles: 0 },
+  { label: "draft_split_controls_only", place: nil, points: nil, capitals: 4, capital_captures: nil, capital_controls: 2, lands: 4, skulls: 0, dragons: 0, castles: 0 },
+  { label: "draft_split_captures_only", place: nil, points: nil, capitals: 4, capital_captures: 2, capital_controls: nil, lands: 5, skulls: 1, dragons: 0, castles: 0 },
+  { label: "manual_override_split_over_cap", place: 1, capitals: 1, capital_captures: 3, capital_controls: 2, lands: 6, skulls: 2, dragons: 1, castles: 1, manual_offset: 4 },
+  { label: "manual_override_legacy_only", place: 2, capitals: 5, capital_captures: nil, capital_controls: nil, lands: 7, skulls: 2, dragons: 0, castles: 2, manual_offset: -2 },
+  { label: "all_zero_explicit_new_fields", place: 3, capitals: 2, capital_captures: 0, capital_controls: 0, lands: 0, skulls: 0, dragons: 0, castles: 0 },
+  { label: "lands_and_skulls_without_capital_points", place: 4, capitals: 0, capital_captures: nil, capital_controls: nil, lands: 15, skulls: 4, dragons: 0, castles: 0 },
+  { label: "mixed_stats_under_cap", place: 5, capitals: 2, capital_captures: 1, capital_controls: 1, lands: 9, skulls: 2, dragons: 2, castles: 3 }
+]
+seed_case_game!(
+  game: admin_corner_case_game_b,
+  players: admin_corner_case_players_b,
+  cases: admin_corner_cases_b,
+  used_houses_by_player: used_houses_by_player,
+  rng: rng
+)
+puts "Admin corner cases seeded in tour 4 table B"
 
 # Set initial rankings
 RankingCalculator.recalculate!

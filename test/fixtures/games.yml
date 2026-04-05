@@ -5,3 +5,11 @@ game_1a:
 game_1b:
   tour: tour_one
   table_letter: B
+
+game_2c:
+  tour: tour_two
+  table_letter: C
+
+game_2d:
+  tour: tour_two
+  table_letter: D

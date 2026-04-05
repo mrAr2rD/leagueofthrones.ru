@@ -31,3 +31,29 @@ cersei_game1:
   skulls: 1
   dragons: 1
   castles: 0
+
+arya_game2:
+  game: game_2c
+  player: arya
+  house: martell
+  place: 1
+  points: 20
+  capitals: 0
+  capital_captures: 1
+  capital_controls: 0
+  lands: 6
+  dragons: 1
+  castles: 0
+
+sansa_game2:
+  game: game_2d
+  player: sansa
+  house: arryn
+  place: 1
+  points: 20
+  capitals: 0
+  capital_captures: 1
+  capital_controls: 0
+  lands: 4
+  dragons: 1
+  castles: 0

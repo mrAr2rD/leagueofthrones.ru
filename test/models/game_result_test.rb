@@ -28,6 +28,24 @@ class GameResultTest < ActiveSupport::TestCase
     assert_equal 1, gr.capital_bonus_points
   end
 
+  test "ranking captures fall back to legacy capitals when split fields are nil" do
+    assert_equal 2, game_results(:daenerys_game1).ranking_captures
+  end
+
+  test "ranking captures use only capital captures for new-format records" do
+    assert_equal 1, game_results(:cersei_game1).ranking_captures
+  end
+
+  test "ranking captures ignore capital controls" do
+    gr = GameResult.new(
+      capitals: 99,
+      capital_captures: nil,
+      capital_controls: 2
+    )
+
+    assert_equal 0, gr.ranking_captures
+  end
+
   test "suggested_points uses legacy capitals when split fields are blank" do
     gr = GameResult.new(game: games(:game_1a), place: 1, capitals: 2, dragons: 1, castles: 0)
 

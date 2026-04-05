@@ -59,6 +59,12 @@ class GameResult < ApplicationRecord
     ), MAX_CAPITAL_POINTS ].min
   end
 
+  def self.ranking_captures(capitals:, capital_captures: nil, capital_controls: nil)
+    return capitals.to_i if capital_captures.nil? && capital_controls.nil?
+
+    capital_captures.to_i
+  end
+
   def self.calculate_points(place:, capitals: 0, capital_captures: nil, capital_controls: nil, dragons:, castles:, table_letter:)
     normalized_place = place.to_i
     return nil if normalized_place <= 0
@@ -90,6 +96,14 @@ class GameResult < ApplicationRecord
 
   def capital_bonus_points
     self.class.capital_points(
+      capitals: capitals,
+      capital_captures: capital_captures,
+      capital_controls: capital_controls
+    )
+  end
+
+  def ranking_captures
+    self.class.ranking_captures(
       capitals: capitals,
       capital_captures: capital_captures,
       capital_controls: capital_controls

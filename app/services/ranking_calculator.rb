@@ -1,6 +1,6 @@
 class RankingCalculator
   RankedPlayer = Struct.new(
-    :player, :total_points, :best6_points, :wins, :capitals, :dragons,
+    :player, :total_points, :best6_points, :wins, :captures, :dragons, :lands,
     :games_played, :rank, :league, :rank_change, :last_tour_points, keyword_init: true
   )
 
@@ -31,7 +31,7 @@ class RankingCalculator
     @last_tour = Tour.played.order(number: :desc).first
     ranked = players.map { |player| build_ranking(player) }
 
-    ranked.sort_by! { |rp| [ -rp.best6_points, -rp.wins, -rp.capitals, -rp.dragons ] }
+    ranked.sort_by! { |rp| [ -rp.best6_points, -rp.wins, -rp.captures, -rp.dragons, -rp.lands ] }
 
     ranked.each_with_index do |rp, idx|
       rp.rank = idx + 1
@@ -59,8 +59,9 @@ class RankingCalculator
       total_points: points_list.sum,
       best6_points: best6,
       wins: results.count { |r| r.place == 1 },
-      capitals: results.sum(&:effective_capitals),
+      captures: results.sum(&:ranking_captures),
       dragons: results.sum { |r| r.dragons || 0 },
+      lands: results.sum { |r| r.lands || 0 },
       games_played: results.size,
       rank: 0,
       league: :iron,

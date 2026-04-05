@@ -9,3 +9,11 @@ jon:
 cersei:
   first_name: Иван
   nickname: "@IoIein"
+
+arya:
+  first_name: Анна
+  nickname: "@arya_fixture"
+
+sansa:
+  first_name: София
+  nickname: "@sansa_fixture"

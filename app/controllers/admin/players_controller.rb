@@ -42,7 +42,7 @@ module Admin
     end
 
     def player_params
-      params.expect(player: [ :first_name, :last_name, :nickname, :photo ])
+      params.expect(player: [ :first_name, :last_name, :nickname, :photo, :participates_in_tournament ])
     end
   end
 end

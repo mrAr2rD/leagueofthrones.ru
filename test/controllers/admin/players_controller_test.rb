@@ -21,6 +21,7 @@ module Admin
         post admin_players_url, params: { player: { first_name: "Ходор", nickname: "Ходор" } }
       end
       assert_redirected_to admin_players_url
+      assert Player.order(:id).last.participates_in_tournament?
     end
 
     test "should get edit" do
@@ -31,6 +32,13 @@ module Admin
     test "should update player" do
       patch admin_player_url(players(:daenerys)), params: { player: { first_name: "Дени" } }
       assert_redirected_to admin_players_url
+    end
+
+    test "should update tournament participation" do
+      patch admin_player_url(players(:daenerys)), params: { player: { participates_in_tournament: "0" } }
+
+      assert_redirected_to admin_players_url
+      assert_not players(:daenerys).reload.participates_in_tournament?
     end
 
     test "should destroy player" do

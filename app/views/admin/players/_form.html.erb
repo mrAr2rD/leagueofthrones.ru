@@ -22,6 +22,16 @@
     <%= f.text_field :nickname, class: "w-full border border-gray-300 rounded px-3 py-2" %>
   </div>
 
+  <div class="rounded border border-gray-200 bg-gray-50 px-4 py-3">
+    <label class="flex items-start gap-3">
+      <%= f.check_box :participates_in_tournament, class: "mt-1 h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-gray-500" %>
+      <span>
+        <span class="block text-sm font-medium text-gray-700">Участие в турнире</span>
+        <span class="block text-xs text-gray-500">Игрок отображается в публичном leaderboard и списках лиг.</span>
+      </span>
+    </label>
+  </div>
+
   <div>
     <%= f.label :photo, "Фото", class: "block text-sm font-medium text-gray-700 mb-1" %>
     <%= f.file_field :photo, class: "block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200" %>

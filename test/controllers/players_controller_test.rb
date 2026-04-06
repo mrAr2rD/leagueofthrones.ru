@@ -6,6 +6,7 @@ class PlayersControllerTest < ActionDispatch::IntegrationTest
     get player_url(players(:daenerys))
     assert_response :success
     assert_match "Семён", response.body
+    assert_no_match "Участие в турнире", response.body
   end
 
   test "show uses captures wording and history values" do
@@ -58,5 +59,15 @@ class PlayersControllerTest < ActionDispatch::IntegrationTest
     assert_equal "4", history_rows.first[7]
     assert_equal [ "3", "A", "Таргариен" ], history_rows.second.first(3)
     assert_equal "2", history_rows.second[7]
+  end
+
+  test "show stays public for inactive player and hides participation flag" do
+    player = Player.create!(first_name: "Скрытый", nickname: "@hidden_profile", participates_in_tournament: false)
+
+    get player_url(player)
+
+    assert_response :success
+    assert_match "Скрытый", response.body
+    assert_no_match "Участие в турнире", response.body
   end
 end

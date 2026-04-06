@@ -20,6 +20,11 @@
             <%= [player.first_name, player.last_name].compact_blank.join(" ") %>
           </div>
           <div class="mt-1 break-all text-sm text-gray-500"><%= player.nickname %></div>
+          <div class="mt-2">
+            <span class="<%= player.participates_in_tournament? ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-600' %> inline-flex rounded-full px-2 py-1 text-xs font-medium">
+              <%= player.participates_in_tournament? ? "Участвует" : "Не участвует" %>
+            </span>
+          </div>
         </div>
       </div>
 
@@ -43,6 +48,7 @@
           <th class="px-4 py-2 text-left">Имя</th>
           <th class="px-4 py-2 text-left">Фамилия</th>
           <th class="px-4 py-2 text-left">Никнейм</th>
+          <th class="px-4 py-2 text-left">Турнир</th>
           <th class="px-4 py-2 text-right">Действия</th>
         </tr>
       </thead>
@@ -61,6 +67,11 @@
             <td class="px-4 py-2"><%= player.first_name %></td>
             <td class="px-4 py-2"><%= player.last_name %></td>
             <td class="px-4 py-2 text-gray-500"><%= player.nickname %></td>
+            <td class="px-4 py-2">
+              <span class="<%= player.participates_in_tournament? ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-600' %> inline-flex rounded-full px-2 py-1 text-xs font-medium">
+                <%= player.participates_in_tournament? ? "Да" : "Нет" %>
+              </span>
+            </td>
             <td class="px-4 py-2">
               <div class="flex items-center justify-end gap-3 whitespace-nowrap">
                 <%= link_to "Ред.", edit_admin_player_path(player), class: "text-blue-600 hover:underline" %>

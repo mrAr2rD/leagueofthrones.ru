@@ -28,6 +28,16 @@ class RankingCalculatorTest < ActiveSupport::TestCase
     assert_includes [ :gold, :silver, :bronze, :iron ], first.league
   end
 
+  test "excludes players without tournament participation from rankings" do
+    active_player = Player.create!(first_name: "Активный", nickname: "@ranking_active")
+    inactive_player = Player.create!(first_name: "Неактивный", nickname: "@ranking_hidden", participates_in_tournament: false)
+
+    ranking_player_ids = RankingCalculator.call.map { |rp| rp.player.id }
+
+    assert_includes ranking_player_ids, active_player.id
+    assert_not_includes ranking_player_ids, inactive_player.id
+  end
+
   test "recalculate! updates previous_rank" do
     RankingCalculator.recalculate!
     daenerys = players(:daenerys).reload

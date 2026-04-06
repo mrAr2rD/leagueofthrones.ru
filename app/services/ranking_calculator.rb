@@ -26,7 +26,7 @@ class RankingCalculator
   end
 
   def call
-    players = Player.includes(game_results: { game: :tour }).all
+    players = Player.participating_in_tournament.includes(game_results: { game: :tour })
     @played_tour_ids = Tour.played.pluck(:id).to_set
     @last_tour = Tour.played.order(number: :desc).first
     ranked = players.map { |player| build_ranking(player) }

@@ -1,9 +1,15 @@
 class Player < ApplicationRecord
+  scope :participating_in_tournament, -> { where("players.participates_in_tournament IS NOT FALSE") }
+
   has_many :game_results, dependent: :destroy
   has_one_attached :photo
 
   validates :first_name, :nickname, presence: true
   validates :nickname, uniqueness: true
+
+  def participates_in_tournament?
+    self[:participates_in_tournament] != false
+  end
 
   def display_name
     [first_name, last_name].compact_blank.join(" ")

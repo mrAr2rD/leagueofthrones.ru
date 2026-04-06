@@ -11,6 +11,26 @@ class PlayerTest < ActiveSupport::TestCase
     assert player.valid?
   end
 
+  test "new players participate in tournament by default" do
+    assert Player.new.participates_in_tournament?
+  end
+
+  test "legacy nil tournament flag is treated as participating" do
+    player = Player.new(first_name: "Legacy", nickname: "legacy_nil", participates_in_tournament: nil)
+    assert player.participates_in_tournament?
+  end
+
+  test "database default marks inserted players as participating" do
+    Player.insert_all!([ {
+      first_name: "Legacy DB",
+      nickname: "@legacy_db_default",
+      created_at: Time.current,
+      updated_at: Time.current
+    } ])
+
+    assert Player.find_by!(nickname: "@legacy_db_default").participates_in_tournament?
+  end
+
   test "requires first_name" do
     player = Player.new(nickname: "tester")
     assert_not player.valid?

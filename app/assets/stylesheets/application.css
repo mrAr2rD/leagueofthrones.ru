@@ -339,6 +339,12 @@ body.pixel-realm::after {
   transform: translate(-1px, -1px);
   box-shadow: 3px 3px 0 var(--pixel-shadow);
 }
+.tour-scroll-selected {
+  border-color: var(--gold);
+  color: var(--gold);
+  background: rgba(232, 184, 48, 0.25);
+  box-shadow: 0 0 8px rgba(232, 184, 48, 0.4), 2px 2px 0 var(--pixel-shadow);
+}
 
 /* ═══════════════════════════════════════════
    LEAGUE TABLE — THE GREAT HALL BOARD

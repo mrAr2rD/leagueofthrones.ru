@@ -12,7 +12,7 @@
       action: "submit->slot-toggle#validateBeforeSubmit",
       points_calculator_table_letter_value: @game.table_letter,
       slot_toggle_all_player_options_value: @player_options.to_json,
-      slot_toggle_blocked_player_ids_value: @blocked_player_ids.map(&:to_s).to_json,
+      slot_toggle_player_tour_table_warnings_value: @player_tour_table_warnings.to_json,
       slot_toggle_all_house_options_value: @house_options.to_json,
       slot_toggle_player_house_options_value: @player_house_options.to_json
     } do |f| %>
@@ -34,13 +34,16 @@
     <% @game.game_results.each_with_index do |gr, i| %>
       <%= f.fields_for "game_results_attributes[]", gr, index: i do |grf| %>
         <% row_player_options = @player_options_by_selected.fetch(gr.player_id.to_s, @player_options_by_selected.fetch("")) %>
+        <% row_player_label = row_player_options.find { |(_label, player_id)| player_id.to_s == gr.player_id.to_s }&.first %>
+        <% warning_tables = @player_tour_table_warnings.fetch(gr.player_id.to_s, []) %>
+        <% player_warning = warning_tables.any? ? "Уже играет в этом туре: #{warning_tables.map { |table_letter| "стол #{table_letter}" }.join(', ')}" : "" %>
         <% row_house_options = gr.player_id.present? ? @player_house_options.fetch(gr.player_id.to_s, @house_options) : @house_options %>
         <% house_hint = if gr.player_id.present?
              row_house_options.any? ? "Можно выбрать: #{row_house_options.map(&:first).join(', ')}" : "У этого игрока не осталось свободных домов"
            else
              "Сначала выберите игрока"
            end %>
-        <div class="<%= 'bg-gray-50 opacity-50' unless gr.player_id.present? %> p-4" data-points-calculator-target="row" data-slot-toggle-target="row">
+        <div class="<%= 'bg-gray-50' unless gr.player_id.present? %> p-4" data-points-calculator-target="row" data-slot-toggle-target="row">
           <%= grf.hidden_field :id if gr.persisted? %>
           <%= grf.hidden_field :capitals,
               value: gr.capitals || 0,
@@ -49,11 +52,30 @@
           <div class="grid grid-cols-2 gap-3 lg:grid-cols-[minmax(9rem,1.7fr)_minmax(8rem,1.2fr)_repeat(9,minmax(3.75rem,0.72fr))] lg:items-start">
             <div class="col-span-2 min-w-0 lg:col-span-1">
               <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500 lg:hidden">Игрок</label>
+              <div class="relative" data-slot-toggle-target="playerCombobox">
+                <% listbox_id = "player_options_#{i}" %>
+                <%= text_field_tag nil,
+                    row_player_label,
+                    class: "h-12 w-full min-w-0 rounded border border-gray-300 px-3 text-sm leading-5",
+                    placeholder: "— свободный слот —",
+                    autocomplete: "off",
+                    role: "combobox",
+                    aria: { autocomplete: "list", expanded: "false", controls: listbox_id },
+                    data: {
+                      action: "click->slot-toggle#openPlayerMenu input->slot-toggle#filterPlayers focus->slot-toggle#openPlayerMenu keydown->slot-toggle#handlePlayerInputKeydown",
+                      slot_toggle_target: "playerInput"
+                    } %>
+                <div id="<%= listbox_id %>"
+                     class="absolute z-20 mt-1 hidden max-h-56 w-full overflow-y-auto rounded border border-gray-300 bg-white shadow"
+                     role="listbox"
+                     data-slot-toggle-target="playerMenu"></div>
+              </div>
               <%= grf.select :player_id,
                   options_for_select(row_player_options, gr.player_id),
                   { include_blank: "— свободный слот —" },
-                  class: "h-12 w-full min-w-0 rounded border border-gray-300 px-3 text-sm leading-5",
+                  class: "hidden",
                   data: { action: "change->slot-toggle#refresh", slot_toggle_target: "playerSelect" } %>
+              <p class="mt-1 min-h-[1.25rem] text-xs text-amber-700" data-slot-toggle-target="playerWarning"><%= player_warning %></p>
             </div>
 
             <div class="col-span-2 min-w-0 lg:col-span-1">
@@ -83,11 +105,6 @@
               <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500 lg:hidden">Контроль столиц</label>
               <%= grf.number_field :capital_controls, min: 0, class: "h-12 w-full rounded border border-gray-300 px-3 text-center text-sm leading-5",
                   data: { action: "input->points-calculator#calculate", points_calculator_target: "capitalControls" } %>
-              <% if gr.persisted? && gr.using_legacy_capitals? %>
-                <p class="mt-1 text-xs text-amber-700" data-points-calculator-target="legacyNotice">
-                  Пока используются legacy-данные “Столицы”: <%= gr.capitals %>. Заполните новые поля, чтобы перейти на раздельный учёт.
-                </p>
-              <% end %>
             </div>
 
             <div class="min-w-0">
@@ -124,6 +141,12 @@
               <%= grf.number_field :points, class: "h-12 w-full rounded border border-gray-300 px-3 text-center text-sm font-bold leading-5",
                   data: { action: "input->points-calculator#updateManualAdjustment", points_calculator_target: "points" } %>
             </div>
+
+            <% if gr.persisted? && gr.using_legacy_capitals? %>
+              <p class="col-span-2 mt-1 text-xs text-amber-700 lg:col-span-full" data-points-calculator-target="legacyNotice">
+                Пока используются legacy-данные “Столицы”: <%= gr.capitals %>. Заполните новые поля, чтобы перейти на раздельный учёт.
+              </p>
+            <% end %>
           </div>
         </div>
       <% end %>

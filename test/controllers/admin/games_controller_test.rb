@@ -60,15 +60,49 @@ module Admin
       assert_equal "stark", game.game_results.find_by(player_id: second_result.player_id).house
     end
 
-    test "rejects a player already selected in another game of the tour" do
+    test "allows saving a player already selected in another game of the tour" do
       result = game_results(:cersei_game1)
 
       patch_game(result.game,
         submitted_result_attributes(result, player_id: players(:daenerys).id, house: "arryn"))
 
-      assert_response :unprocessable_entity
-      assert_includes response.body, "уже выбран за другим столом этого тура"
-      assert_equal players(:cersei).id, result.reload.player_id
+      assert_redirected_to admin_tour_url(tours(:tour_one))
+      saved_result = result.game.reload.game_results.find_by!(house: "arryn")
+      assert_equal players(:daenerys).id, saved_result.player_id
+    end
+
+    test "shows warning for player already selected in another game of the tour" do
+      GameResult.create!(
+        game: games(:game_1b),
+        player: players(:daenerys),
+        house: "arryn",
+        place: 3,
+        points: 10,
+        capitals: 0,
+        dragons: 0,
+        castles: 0
+      )
+
+      get edit_admin_tour_game_url(tours(:tour_one), games(:game_1b))
+
+      assert_response :success
+      assert_includes response.body, "Уже играет в этом туре: стол A"
+    end
+
+    test "player dropdown uses searchable combobox markup" do
+      get edit_admin_tour_game_url(tours(:tour_one), games(:game_1a))
+
+      assert_response :success
+      assert_includes response.body, "role=\"combobox\""
+      assert_includes response.body, "data-slot-toggle-target=\"playerInput\""
+      assert_includes response.body, "data-slot-toggle-target=\"playerSelect\""
+    end
+
+    test "player options are sorted by admin label" do
+      get edit_admin_tour_game_url(tours(:tour_one), games(:game_1a))
+
+      assert_response :success
+      assert_operator response.body.index("Анна (@arya_fixture)"), :<, response.body.index("Семён (@samzakharov)")
     end
 
     test "rejects incomplete rows before saving" do

@@ -31,10 +31,10 @@ module Admin
     end
 
     def load_form_options
-      @players = Player.order(:last_name, :first_name, :nickname)
+      @players = Player.all.sort_by { |player| [ player.admin_option_label.downcase, player.id ] }
       @player_options = @players.map { |player| [ player.admin_option_label, player.id ] }
-      @blocked_player_ids = @tour.game_results.where.not(game_id: @game.id).distinct.pluck(:player_id)
       @player_options_by_selected = build_player_options_by_selected
+      @player_tour_table_warnings = build_player_tour_table_warnings
       @house_options = GameResult.house_options
       @player_house_options = build_player_house_options
     end
@@ -71,9 +71,22 @@ module Admin
 
     def selectable_player_options(selected_player_id: nil)
       @players.filter_map do |player|
-        next if @blocked_player_ids.include?(player.id) && player.id != selected_player_id
-
         [ player.admin_option_label, player.id ]
+      end
+    end
+
+    def build_player_tour_table_warnings
+      table_order = Game::TABLE_LETTERS.each_with_index.to_h
+      rows = @tour.game_results
+                  .joins(:game)
+                  .where.not(game_id: @game.id)
+                  .distinct
+                  .pluck(:player_id, "games.table_letter")
+
+      rows.each_with_object(Hash.new { |hash, key| hash[key] = [] }) do |(player_id, table_letter), warnings|
+        warnings[player_id.to_s] << table_letter
+      end.transform_values do |table_letters|
+        table_letters.uniq.sort_by { |table_letter| table_order.fetch(table_letter, table_letter) }
       end
     end
 

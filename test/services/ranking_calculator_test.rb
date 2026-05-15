@@ -102,6 +102,47 @@ class RankingCalculatorTest < ActiveSupport::TestCase
     assert_equal latest_result.points, player_ranking.last_tour_points
   end
 
+  test "multiple games in one played tour count as separate games and sum last tour points" do
+    player = Player.create!(first_name: "Мульти", nickname: "@same_tour_multi")
+    tour = Tour.create!(
+      number: 8,
+      played: true,
+      played_on: Date.new(2026, 4, 1),
+      starts_on: Date.new(2026, 3, 31),
+      ends_on: Date.new(2026, 4, 1)
+    )
+    first_game = Game.create!(tour: tour, table_letter: "A")
+    second_game = Game.create!(tour: tour, table_letter: "B")
+
+    GameResult.create!(
+      game: first_game,
+      player: player,
+      house: "stark",
+      place: 1,
+      points: 16,
+      capitals: 1,
+      dragons: 0,
+      castles: 0
+    )
+    GameResult.create!(
+      game: second_game,
+      player: player,
+      house: "lannister",
+      place: 2,
+      points: 11,
+      capitals: 0,
+      dragons: 1,
+      castles: 1
+    )
+
+    player_ranking = ranking_for(player)
+
+    assert_equal 2, player_ranking.games_played
+    assert_equal 27, player_ranking.total_points
+    assert_equal 27, player_ranking.best6_points
+    assert_equal 27, player_ranking.last_tour_points
+  end
+
   test "higher wins break ties on equal best6 points" do
     player_with_win = create_ranked_player(
       nickname: "@wins_first",

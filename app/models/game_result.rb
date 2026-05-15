@@ -32,7 +32,6 @@ class GameResult < ApplicationRecord
             inclusion: { in: HOUSE_LABELS.keys, message: "выбран некорректно" },
             allow_blank: true
   validate :player_unique_within_game
-  validate :player_unique_within_tour
   validate :house_unique_within_game
   validate :house_unique_for_player
 
@@ -137,19 +136,6 @@ class GameResult < ApplicationRecord
     return unless sibling_results.any? { |result| result.player_id == player_id }
 
     errors.add(:player_id, "уже выбран за этим столом")
-  end
-
-  def player_unique_within_tour
-    return unless player_id? && game&.tour_id
-
-    duplicate_in_other_games = GameResult.joins(:game)
-                                         .where(player_id: player_id, games: { tour_id: game.tour_id })
-                                         .where.not(game_id: game_id)
-                                         .where.not(id: id)
-                                         .exists?
-    return unless duplicate_in_other_games
-
-    errors.add(:player_id, "уже выбран за другим столом этого тура")
   end
 
   def house_unique_within_game

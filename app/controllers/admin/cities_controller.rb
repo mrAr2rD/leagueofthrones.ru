@@ -1,5 +1,6 @@
 module Admin
   class CitiesController < BaseController
+    before_action :require_superadmin!
     before_action :set_city, only: [ :edit, :update, :destroy ]
 
     def index

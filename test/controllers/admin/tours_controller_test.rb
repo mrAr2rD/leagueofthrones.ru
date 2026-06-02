@@ -62,6 +62,25 @@ module Admin
       assert_response :unprocessable_entity
     end
 
+    test "creating a tour generates the requested number of tables" do
+      post admin_tours_url, params: { tour: {
+        city_id: cities(:spb).id, number: 1, format: "classic", tables_count: 2
+      } }
+
+      tour = cities(:spb).tours.find_by(number: 1)
+      assert_equal %w[A B], tour.games.order(:table_letter).pluck(:table_letter)
+    end
+
+    test "reducing tables_count removes empty tables" do
+      tour = cities(:moscow).tours.create!(number: 6, tables_count: 4)
+      tour.sync_tables
+      assert_equal 4, tour.games.count
+
+      patch admin_tour_url(tour), params: { tour: { tables_count: 2 } }
+
+      assert_equal %w[A B], tour.reload.games.order(:table_letter).pluck(:table_letter)
+    end
+
     test "destroys a tour" do
       tour = cities(:moscow).tours.create!(number: 7)
 

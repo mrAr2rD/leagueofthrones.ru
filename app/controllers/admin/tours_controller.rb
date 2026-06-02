@@ -1,10 +1,13 @@
 module Admin
   class ToursController < BaseController
     before_action :set_tour, only: [ :show, :edit, :update, :destroy ]
+    before_action :authorize_tour!, only: [ :show, :edit, :update, :destroy ]
 
     def index
-      @city = City.find_by(slug: params[:city]) if params[:city].present?
-      scope = Tour.includes(:city, games: :game_results).order(:city_id, :number)
+      @city = accessible_cities.find_by(slug: params[:city]) if params[:city].present?
+      scope = Tour.where(city: accessible_cities)
+                  .includes(:city, games: :game_results)
+                  .order(:city_id, :number)
       scope = scope.where(city: @city) if @city
       @tours = scope
     end
@@ -14,7 +17,7 @@ module Admin
     end
 
     def new
-      city = City.find_by(slug: params[:city]) || City.ordered.first
+      city = accessible_cities.find_by(slug: params[:city]) || accessible_cities.first
       @tour = Tour.new(
         city: city,
         format: city&.default_format,
@@ -24,7 +27,11 @@ module Admin
 
     def create
       @tour = Tour.new(tour_params)
+      authorize_city!(@tour.city)
+      return if performed?
+
       if @tour.save
+        @tour.sync_tables
         redirect_to admin_tour_path(@tour), notice: "Тур создан"
       else
         render :new, status: :unprocessable_entity
@@ -35,7 +42,11 @@ module Admin
     end
 
     def update
+      authorize_city!(City.find_by(id: tour_params[:city_id])) if tour_params.key?(:city_id)
+      return if performed?
+
       if @tour.update(tour_params)
+        @tour.sync_tables
         redirect_to admin_tour_path(@tour), notice: "Тур обновлён"
       else
         render :edit, status: :unprocessable_entity
@@ -53,8 +64,12 @@ module Admin
       @tour = Tour.find(params[:id])
     end
 
+    def authorize_tour!
+      authorize_city!(@tour.city)
+    end
+
     def tour_params
-      params.expect(tour: [ :city_id, :number, :format, :played_on, :played, :starts_on, :ends_on ])
+      params.expect(tour: [ :city_id, :number, :format, :tables_count, :played_on, :played, :starts_on, :ends_on ])
     end
   end
 end

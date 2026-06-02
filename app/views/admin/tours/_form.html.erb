@@ -9,12 +9,18 @@
 
   <div>
     <%= f.label :city_id, "Город", class: "block text-sm font-medium text-gray-700 mb-1" %>
-    <%= f.collection_select :city_id, City.ordered, :id, :name, {}, class: "w-full border border-gray-300 rounded px-3 py-2" %>
+    <%= f.collection_select :city_id, accessible_cities, :id, :name, {}, class: "w-full border border-gray-300 rounded px-3 py-2" %>
   </div>
 
   <div>
     <%= f.label :number, "Номер тура", class: "block text-sm font-medium text-gray-700 mb-1" %>
     <%= f.number_field :number, min: 1, max: tour.game_format.tour_default_count, class: "w-full border border-gray-300 rounded px-3 py-2" %>
+  </div>
+
+  <div>
+    <%= f.label :tables_count, "Количество столов", class: "block text-sm font-medium text-gray-700 mb-1" %>
+    <%= f.select :tables_count, (1..Game::TABLE_LETTERS.size).to_a, {}, class: "w-full border border-gray-300 rounded px-3 py-2" %>
+    <p class="mt-1 text-xs text-gray-400">Столы A–<%= Game::TABLE_LETTERS.first(tour.tables_count).last %> создадутся автоматически. Уменьшение убирает только пустые столы.</p>
   </div>
 
   <div>

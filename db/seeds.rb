@@ -1,6 +1,7 @@
 # Admin user
 AdminUser.find_or_create_by!(login: "admin") do |u|
   u.password = ENV.fetch("ADMIN_PASSWORD", "password")
+  u.superadmin = true
 end
 puts "Admin user created (login: admin)"
 

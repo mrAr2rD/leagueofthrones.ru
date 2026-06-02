@@ -7,6 +7,7 @@ class Tour < ApplicationRecord
             uniqueness: { scope: :city_id },
             numericality: { only_integer: true, greater_than: 0 }
   validates :format, inclusion: { in: GameFormat.keys }
+  validates :tables_count, inclusion: { in: 1..Game::TABLE_LETTERS.size }
   validate :number_within_format
   validate :ends_on_after_starts_on
 
@@ -15,6 +16,24 @@ class Tour < ApplicationRecord
 
   # Автоматически: нет даты → не сыграно
   before_validation :unplay_if_no_date
+
+  # Буквы столов этого тура: A, A–B, A–D и т.п.
+  def table_letters
+    Game::TABLE_LETTERS.first(tables_count)
+  end
+
+  # Создаёт недостающие столы и удаляет лишние ПУСТЫЕ (столы с результатами
+  # не трогаются — их удаляют вручную). Вызывается из админки при сохранении.
+  def sync_tables
+    wanted = table_letters
+    existing = games.pluck(:table_letter)
+
+    (wanted - existing).each { |letter| games.create!(table_letter: letter) }
+
+    games.where.not(table_letter: wanted).each do |game|
+      game.destroy if game.game_results.empty?
+    end
+  end
 
   # Формат тура задаёт правила подсчёта и число слотов.
   def game_format

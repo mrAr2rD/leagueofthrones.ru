@@ -3,6 +3,8 @@ class City < ApplicationRecord
   has_many :site_pages, dependent: :destroy
   has_many :player_cities, dependent: :destroy
   has_many :players, through: :player_cities
+  has_many :admin_user_cities, dependent: :destroy
+  has_many :admin_users, through: :admin_user_cities
 
   validates :name, presence: true
   validates :slug, presence: true, uniqueness: true,

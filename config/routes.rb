@@ -15,6 +15,7 @@ Rails.application.routes.draw do
     post "login",  to: "sessions#create"
     delete "logout", to: "sessions#destroy"
     resources :cities, except: [ :show ]
+    resources :admin_users, except: [ :show ]
     resources :players
     resources :tours, only: [ :index, :show, :new, :create, :edit, :update, :destroy ] do
       resources :games, only: [ :edit, :update ]

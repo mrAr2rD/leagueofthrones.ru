@@ -1,17 +1,24 @@
 module Admin
   class PagesController < BaseController
     before_action :set_page, only: [ :edit, :update ]
+    before_action -> { authorize_city!(@page.city) }, only: [ :edit, :update ]
 
     def index
-      @pages = SitePage.includes(:city).order("cities.position", "site_pages.slug").references(:city)
+      @pages = SitePage.where(city: accessible_cities)
+                       .includes(:city)
+                       .order("cities.position", "site_pages.slug")
+                       .references(:city)
     end
 
     def new
-      @page = SitePage.new(city: City.find_by(slug: params[:city]) || City.ordered.first)
+      @page = SitePage.new(city: accessible_cities.find_by(slug: params[:city]) || accessible_cities.first)
     end
 
     def create
       @page = SitePage.new(create_page_params)
+      authorize_city!(@page.city)
+      return if performed?
+
       if @page.save
         redirect_to edit_admin_page_path(@page), notice: "Страница создана"
       else

@@ -1,3 +1,9 @@
 admin:
   login: admin
+  superadmin: true
+  password_digest: <%= BCrypt::Password.create('password') %>
+
+city_admin:
+  login: city_admin
+  superadmin: false
   password_digest: <%= BCrypt::Password.create('password') %>

@@ -48,4 +48,48 @@ class TourTest < ActiveSupport::TestCase
     mod.number = 9
     assert_not mod.valid?
   end
+
+  test "tables_count is bounded by the available table letters" do
+    tour = Tour.new(number: 5, city: cities(:moscow))
+    tour.tables_count = 0
+    assert_not tour.valid?
+    tour.tables_count = Game::TABLE_LETTERS.size + 1
+    assert_not tour.valid?
+    tour.tables_count = 3
+    assert tour.valid?, tour.errors.full_messages.to_sentence
+  end
+
+  test "table_letters reflects tables_count" do
+    tour = Tour.new(tables_count: 1)
+    assert_equal %w[A], tour.table_letters
+    tour.tables_count = 3
+    assert_equal %w[A B C], tour.table_letters
+  end
+
+  test "sync_tables creates missing tables and removes empty extras" do
+    tour = Tour.create!(number: 5, city: cities(:moscow), tables_count: 2)
+    tour.sync_tables
+    assert_equal %w[A B], tour.games.order(:table_letter).pluck(:table_letter)
+
+    tour.update!(tables_count: 4)
+    tour.sync_tables
+    assert_equal %w[A B C D], tour.games.order(:table_letter).pluck(:table_letter)
+
+    tour.update!(tables_count: 1)
+    tour.sync_tables
+    assert_equal %w[A], tour.games.order(:table_letter).pluck(:table_letter)
+  end
+
+  test "sync_tables keeps extra tables that already have results" do
+    tour = Tour.create!(number: 5, city: cities(:moscow), tables_count: 2)
+    tour.sync_tables
+    game_b = tour.games.find_by!(table_letter: "B")
+    player = Player.create!(first_name: "Стол", nickname: "@table_keeper")
+    GameResult.create!(game: game_b, player: player, house: "stark", place: 1, points: 12, capitals: 0, dragons: 0, castles: 0)
+
+    tour.update!(tables_count: 1)
+    tour.sync_tables
+
+    assert_includes tour.games.pluck(:table_letter), "B", "стол с результатами не должен удаляться"
+  end
 end

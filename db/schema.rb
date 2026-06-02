@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_02_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_02_130100) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -42,10 +42,21 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_02_120000) do
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
   end
 
+  create_table "admin_user_cities", force: :cascade do |t|
+    t.bigint "admin_user_id", null: false
+    t.bigint "city_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["admin_user_id", "city_id"], name: "index_admin_user_cities_on_admin_user_id_and_city_id", unique: true
+    t.index ["admin_user_id"], name: "index_admin_user_cities_on_admin_user_id"
+    t.index ["city_id"], name: "index_admin_user_cities_on_city_id"
+  end
+
   create_table "admin_users", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "login", null: false
     t.string "password_digest", null: false
+    t.boolean "superadmin", default: false, null: false
     t.datetime "updated_at", null: false
     t.index ["login"], name: "index_admin_users_on_login", unique: true
   end
@@ -132,6 +143,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_02_120000) do
     t.boolean "played", default: false, null: false
     t.date "played_on"
     t.date "starts_on"
+    t.integer "tables_count", default: 4, null: false
     t.datetime "updated_at", null: false
     t.index ["city_id", "number"], name: "index_tours_on_city_id_and_number", unique: true
     t.index ["city_id"], name: "index_tours_on_city_id"
@@ -139,6 +151,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_02_120000) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "admin_user_cities", "admin_users"
+  add_foreign_key "admin_user_cities", "cities"
   add_foreign_key "game_results", "games"
   add_foreign_key "game_results", "players"
   add_foreign_key "games", "tours"

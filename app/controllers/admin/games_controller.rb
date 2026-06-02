@@ -6,6 +6,7 @@ module Admin
     ].freeze
 
     before_action :set_tour_and_game
+    before_action -> { authorize_city!(@tour.city) }
     before_action :load_form_options, only: [ :edit, :update ]
 
     def edit

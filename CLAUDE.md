@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-League of Thrones — a Rails 8.1 tournament site with a public leaderboard and an admin panel for managing players, tours, games, and results.
+League of Thrones — a Rails 8.1 tournament site. The public side is a **per-city** leaderboard (Игра Престолов board game tournaments) with player profiles and editable rules; the admin panel manages cities, players, tours, games, results, and pages.
 
 Stack: Ruby 3.3.6, PostgreSQL, Importmap, Turbo + Stimulus, Tailwind CSS, Propshaft, Minitest.
 
@@ -17,43 +17,49 @@ Stack: Ruby 3.3.6, PostgreSQL, Importmap, Turbo + Stimulus, Tailwind CSS, Propsh
 | Run full test suite | `bin/rails test` |
 | Run single test file | `bin/rails test test/path/to/file.rb` |
 | Run single test by name | `bin/rails test test/path/to/file.rb -n test_name` |
-| CI pipeline (lint + audit + tests + seeds) | `bin/ci` |
+| Full CI (lint + audits + tests + seeds) | `bin/ci` |
 | Re-seed local data | `bin/rails db:seed:replant` |
 | Lint Ruby | `bin/rubocop` |
 | Security scan | `bin/brakeman --quiet --no-pager --exit-on-warn --exit-on-error` |
 
+`bin/dev` runs Rails + `tailwindcss:watch` via Procfile.dev; in headless/non-TTY shells the watcher exits and foreman tears down the web process — start `bin/rails server` alone and run `bin/rails tailwindcss:build` once instead.
+
 ## Architecture
 
-Routes (`config/routes.rb`) define two surfaces:
-- **Public**: leaderboard (`/`), player profiles (`/players/:id`), rules (`/rules`), gallery (`/gallery`).
-- **Admin** (`/admin`): CRUD for players, tours, games (nested under tours), and editable site pages.
+### Multi-city scoping (the core organizing principle)
+The public site is scoped by **city**, addressed by a URL prefix `/:city` (param `:city_id`, value = city `slug`; helpers `city_leaderboard_path`, `city_rules_path`, `city_player_path`):
+- `config/routes.rb`: `root` → `cities#index`, which **redirects to the default city** (`City.ordered.first`). The `scope "/:city_id", as: :city` block (leaderboard, rules, player profiles) must stay **after** admin/gallery/health, since `/:city_id` is a catch-all on the first path segment.
+- `app/controllers/concerns/city_scoped.rb` sets `@city` from the slug for `leaderboard`, `players`, and `pages` controllers; an unknown slug redirects to root rather than erroring.
+- A header city switcher (`app/views/shared/_city_switcher.html.erb`) appears only when more than one city exists.
+- `City has_many tours / site_pages / player_cities`, and `players through player_cities` (a player can belong to several cities). Tours and site pages **belong to a city**; their uniqueness is per-city (`[:city_id, :number]` for tours, `[:city_id, :slug]` for pages). Creating a `City` auto-creates its "rules" page (`after_create`).
+- The **gallery is intentionally global** (`/gallery`, all players regardless of city), behind a shared password.
 
-Key models: `Player`, `Tour`, `Game` (a table within a tour, letters A-D), `GameResult` (one player's row at one table), `SitePage` (editable content).
+### Game formats (data-driven scoring shared with JS)
+`app/models/game_format.rb` is a plain-Ruby registry (`mother_of_dragons` = 8 players/table, `classic` = 6) and the **single source of truth for scoring**. Each format carries place points, table-A bonus places, capital cap, and a `castle_rule` expressed **as data** (`linear_cap` or `band` table). A tour has a `format` column; `Tour#game_format` resolves it. The format drives: `GameResult.calculate_points`, league tier size in rankings, the number of result slots in the admin game editor, and — critically — `GameFormat#to_config_json`, the camelCase contract consumed by `app/javascript/controllers/points_calculator_controller.js` so the live JS calculator mirrors the server logic exactly. Change scoring rules in `game_format.rb`, never duplicate them.
 
-`RankingCalculator` (`app/services/ranking_calculator.rb`) rebuilds the leaderboard after any result change.
+### Rankings
+`RankingCalculator.call(city)` rebuilds a city's leaderboard; `RankingCalculator.recalculate!(city)` also persists ranks. It scopes players via `city.players` (participating only) and points to that city's **played** tours. League tiers (gold/silver/bronze/iron) are sized by the city's `default_game_format.league_tier_size`. `previous_rank` lives on `player_cities` (not `players`) so rank deltas never mix across cities. Re-run it after any result change — the admin game save does this.
 
-Stimulus controllers in `app/javascript/controllers/` drive admin game editor interactivity (`points_calculator_controller.js`, `slot_toggle_controller.js`).
+### Admin (flat, not nested under city)
+`/admin` (login `admin` / `password` seeded). Controllers are flat: cities (CRUD, addressed by slug), players (CRUD + `city_ids` checkboxes for membership), tours (CRUD with a `_form` choosing city/format, `?city=slug` filter), pages (CRUD, addressed by **id** since slug is no longer globally unique), and games (nested under tours). The game result editor (`admin/games_controller.rb`) builds `format.players_per_table` slots, scopes selectable players to the tour's city, and saves via `delete_all + insert_all` preserving hidden round-trip fields.
 
 ## Domain Rules
 
-- A player appears at most once per table and once per tour (across tables).
-- Houses are unique within a game; a player cannot reuse the same house across games.
-- Capital scoring: `capital_captures` + `capital_controls` when at least one split field is present; otherwise falls back to legacy `capitals`. Bonus capped at 3.
+- A player appears at most once per table and once per tour (across tables); houses are unique within a game and a player cannot reuse a house across games.
+- Tour `number` is unique within a city and bounded by the format's tour count (`number_within_format`).
+- Capital scoring: `capital_captures` + `capital_controls` when at least one split field is present; otherwise legacy `capitals`. Bonus capped at the format's `capital_cap` (3).
 - Tie-break order: `best6_points` > `wins` > ranking `captures` > `dragons` > `lands`.
-- Ranking `captures` use `capital_captures` for split rows, legacy `capitals` when both split fields are NULL. `capital_controls` is never used for ranking captures.
-- `skulls` are stored but do not affect ranking.
-- `place` may be NULL for draft assignments.
+- Ranking `captures` use `capital_captures` for split rows, legacy `capitals` when both split fields are NULL; `capital_controls` never counts for ranking captures. `skulls` are stored but never affect ranking. `place` may be NULL (draft assignments).
 
 ## Conventions
 
-- Do not edit `db/schema.rb` manually — generate migrations.
-- The admin game result save flow uses `delete_all + insert_all`; preserve hidden round-trip fields when modifying.
-- The project uses fixtures (not factories) for tests.
-- When changing admin result behavior, update view, Stimulus controllers, server-side validations, and tests together.
-- Seeded admin credentials: login `admin`, password `password`.
-- DB names: `i_pr_development` / `i_pr_test`. Config assumes the current OS user for PostgreSQL unless overridden with `DATABASE_URL` or `PG*` env vars.
+- Do not edit `db/schema.rb` by hand — generate migrations.
+- Tests use **fixtures** (not factories). Records created inline in tests must satisfy multi-city constraints: tours/pages need a `city:`, and players need a `PlayerCity` link to appear on a city's leaderboard (see `test/fixtures/cities.yml`, `player_cities.yml`, `site_pages.yml`).
+- When changing admin result behavior, update the view, Stimulus controllers (`points_calculator_controller.js`, `slot_toggle_controller.js`), server-side validations, and tests together.
+- DB names: `i_pr_development` / `i_pr_test`; config assumes the current OS user for PostgreSQL unless overridden via `DATABASE_URL` / `PG*`.
+- In dev, `ActionDispatch::HostAuthorization` returns 403 for non-allowed hosts — drive smoke requests with `HTTP_HOST=localhost`.
 
 ## See Also
 
-- `AGENTS.md` — detailed agent guide: repo map, highest-value files per change area, seeded review pages, and a disposable Docker PostgreSQL one-liner.
+- `AGENTS.md` — detailed repo map, highest-value files per change area, seeded review pages, and a disposable Docker PostgreSQL one-liner.
 - Deployment uses Kamal (`.kamal/`, `bin/kamal`, `Dockerfile`); background jobs run via `bin/jobs` (Solid Queue).

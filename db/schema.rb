@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_13_122124) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_02_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -50,6 +50,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_13_122124) do
     t.index ["login"], name: "index_admin_users_on_login", unique: true
   end
 
+  create_table "cities", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "default_format", default: "mother_of_dragons", null: false
+    t.string "name", null: false
+    t.integer "position", default: 0, null: false
+    t.string "register_url"
+    t.string "slug", null: false
+    t.datetime "updated_at", null: false
+    t.index ["slug"], name: "index_cities_on_slug", unique: true
+  end
+
   create_table "game_results", force: :cascade do |t|
     t.integer "capital_captures"
     t.integer "capital_controls"
@@ -80,35 +91,50 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_13_122124) do
     t.index ["tour_id"], name: "index_games_on_tour_id"
   end
 
+  create_table "player_cities", force: :cascade do |t|
+    t.bigint "city_id", null: false
+    t.datetime "created_at", null: false
+    t.bigint "player_id", null: false
+    t.integer "previous_rank"
+    t.datetime "updated_at", null: false
+    t.index ["city_id"], name: "index_player_cities_on_city_id"
+    t.index ["player_id", "city_id"], name: "index_player_cities_on_player_id_and_city_id", unique: true
+    t.index ["player_id"], name: "index_player_cities_on_player_id"
+  end
+
   create_table "players", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "first_name", null: false
     t.string "last_name"
     t.string "nickname", null: false
     t.boolean "participates_in_tournament", default: true, null: false
-    t.integer "previous_rank"
     t.datetime "updated_at", null: false
     t.index ["nickname"], name: "index_players_on_nickname", unique: true
   end
 
   create_table "site_pages", force: :cascade do |t|
+    t.bigint "city_id", null: false
     t.text "content"
     t.datetime "created_at", null: false
     t.string "slug", null: false
     t.string "title", null: false
     t.datetime "updated_at", null: false
-    t.index ["slug"], name: "index_site_pages_on_slug", unique: true
+    t.index ["city_id", "slug"], name: "index_site_pages_on_city_id_and_slug", unique: true
+    t.index ["city_id"], name: "index_site_pages_on_city_id"
   end
 
   create_table "tours", force: :cascade do |t|
+    t.bigint "city_id", null: false
     t.datetime "created_at", null: false
     t.date "ends_on"
+    t.string "format", default: "mother_of_dragons", null: false
     t.integer "number", null: false
     t.boolean "played", default: false, null: false
     t.date "played_on"
     t.date "starts_on"
     t.datetime "updated_at", null: false
-    t.index ["number"], name: "index_tours_on_number", unique: true
+    t.index ["city_id", "number"], name: "index_tours_on_city_id_and_number", unique: true
+    t.index ["city_id"], name: "index_tours_on_city_id"
   end
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
@@ -116,4 +142,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_13_122124) do
   add_foreign_key "game_results", "games"
   add_foreign_key "game_results", "players"
   add_foreign_key "games", "tours"
+  add_foreign_key "player_cities", "cities"
+  add_foreign_key "player_cities", "players"
+  add_foreign_key "site_pages", "cities"
+  add_foreign_key "tours", "cities"
 end

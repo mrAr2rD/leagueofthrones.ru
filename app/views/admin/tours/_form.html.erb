@@ -1,0 +1,58 @@
+<%= form_with model: [:admin, tour], class: "space-y-4 max-w-lg", data: { controller: "tour-date" } do |f| %>
+  <% if tour.errors.any? %>
+    <div class="bg-red-100 border border-red-300 text-red-800 px-4 py-2 rounded">
+      <% tour.errors.full_messages.each do |msg| %>
+        <p><%= msg %></p>
+      <% end %>
+    </div>
+  <% end %>
+
+  <div>
+    <%= f.label :city_id, "Город", class: "block text-sm font-medium text-gray-700 mb-1" %>
+    <%= f.collection_select :city_id, City.ordered, :id, :name, {}, class: "w-full border border-gray-300 rounded px-3 py-2" %>
+  </div>
+
+  <div>
+    <%= f.label :number, "Номер тура", class: "block text-sm font-medium text-gray-700 mb-1" %>
+    <%= f.number_field :number, min: 1, max: tour.game_format.tour_default_count, class: "w-full border border-gray-300 rounded px-3 py-2" %>
+  </div>
+
+  <div>
+    <%= f.label :format, "Формат игры", class: "block text-sm font-medium text-gray-700 mb-1" %>
+    <%= f.select :format, GameFormat.options, {}, class: "w-full border border-gray-300 rounded px-3 py-2" %>
+    <p class="mt-1 text-xs text-gray-400">Определяет число игроков за столом и правила подсчёта очков</p>
+  </div>
+
+  <div>
+    <%= f.label :played_on, "Дата проведения", class: "block text-sm font-medium text-gray-700 mb-1" %>
+    <%= f.date_field :played_on, class: "w-full border border-gray-300 rounded px-3 py-2",
+        data: { action: "change->tour-date#toggle", tour_date_target: "input" } %>
+    <p class="mt-1 text-sm <%= tour.played_on? ? 'hidden' : '' %> text-amber-600 font-medium"
+       data-tour-date-target="status">
+      Дата не назначена
+    </p>
+  </div>
+
+  <div class="grid grid-cols-2 gap-4">
+    <div>
+      <%= f.label :starts_on, "Дата начала", class: "block text-sm font-medium text-gray-700 mb-1" %>
+      <%= f.date_field :starts_on, class: "w-full border border-gray-300 rounded px-3 py-2" %>
+    </div>
+    <div>
+      <%= f.label :ends_on, "Дата завершения", class: "block text-sm font-medium text-gray-700 mb-1" %>
+      <%= f.date_field :ends_on, class: "w-full border border-gray-300 rounded px-3 py-2" %>
+    </div>
+  </div>
+
+  <div>
+    <label class="flex items-center gap-2 cursor-pointer">
+      <%= f.check_box :played, class: "w-5 h-5 rounded border-gray-300" %>
+      <span class="text-sm font-medium text-gray-700">Сыграно</span>
+    </label>
+    <p class="mt-1 text-xs text-gray-400">Очки учитываются в рейтинге только для сыгранных туров</p>
+  </div>
+
+  <div>
+    <%= f.submit "Сохранить", class: "bg-gray-900 text-white px-6 py-2 rounded hover:bg-gray-700 cursor-pointer" %>
+  </div>
+<% end %>

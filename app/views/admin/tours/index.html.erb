@@ -1,9 +1,21 @@
-<h1 class="text-2xl font-bold mb-6">Туры</h1>
+<div class="flex items-center justify-between mb-6">
+  <h1 class="text-2xl font-bold">
+    Туры<% if @city %>: <%= @city.name %><% end %>
+  </h1>
+  <div class="flex items-center gap-4">
+    <% if @city %>
+      <%= link_to "Все города", admin_tours_path, class: "text-sm text-gray-500 hover:text-gray-700" %>
+    <% end %>
+    <%= link_to "Добавить тур", new_admin_tour_path(city: @city&.slug),
+        class: "inline-flex items-center justify-center rounded bg-gray-900 px-4 py-2 text-sm text-white hover:bg-gray-700" %>
+  </div>
+</div>
 
 <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
   <% @tours.each do |tour| %>
     <div class="bg-white rounded shadow p-4 hover:shadow-lg transition">
       <%= link_to admin_tour_path(tour), class: "block" do %>
+        <p class="text-xs text-gray-400"><%= tour.city.name %> · <%= tour.game_format.label %></p>
         <h2 class="font-bold text-lg">Тур <%= tour.number %></h2>
         <p class="text-sm text-gray-500 mt-1">
           <%= tour.played_on ? tour.played_on.strftime("%d.%m.%Y") : "Дата не назначена" %>

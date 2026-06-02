@@ -218,6 +218,34 @@ module Admin
       assert_equal 17, saved_result.suggested_points
     end
 
+    test "mother of dragons game renders eight result slots" do
+      get edit_admin_tour_game_url(tours(:tour_one), games(:game_1a))
+
+      assert_response :success
+      assert_select "[data-points-calculator-target=row]", count: 8
+    end
+
+    test "classic format game renders six result slots" do
+      classic_tour = cities(:moscow).tours.create!(number: 3, format: "classic")
+      classic_game = Game.create!(tour: classic_tour, table_letter: "A")
+
+      get edit_admin_tour_game_url(classic_tour, classic_game)
+
+      assert_response :success
+      assert_select "[data-points-calculator-target=row]", count: 6
+    end
+
+    test "player options are scoped to the tour's city" do
+      outsider = Player.create!(first_name: "Чужак", nickname: "@spb_outsider")
+      PlayerCity.create!(player: outsider, city: cities(:spb))
+
+      get edit_admin_tour_game_url(tours(:tour_one), games(:game_1a))
+
+      assert_response :success
+      assert_match "samzakharov", response.body
+      assert_no_match "spb_outsider", response.body
+    end
+
     private
 
     def patch_game(game, *rows)

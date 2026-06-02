@@ -1,0 +1,28 @@
+<div class="flex items-center justify-between mb-6">
+  <h1 class="text-2xl font-bold">Города</h1>
+  <%= link_to "Добавить город", new_admin_city_path, class: "inline-flex items-center justify-center rounded bg-gray-900 px-4 py-2 text-sm text-white hover:bg-gray-700" %>
+</div>
+
+<div class="space-y-3">
+  <% @cities.each do |city| %>
+    <div class="flex items-center justify-between rounded border border-gray-200 bg-white px-4 py-3">
+      <div class="min-w-0">
+        <h2 class="font-bold text-lg"><%= city.name %></h2>
+        <p class="text-sm text-gray-500">
+          /<%= city.slug %> · <%= city.default_game_format.label %> · туров: <%= city.tours.size %>
+        </p>
+      </div>
+      <div class="flex shrink-0 items-center gap-3">
+        <%= link_to "Туры", admin_tours_path(city: city.slug), class: "text-sm text-blue-600 hover:underline" %>
+        <%= link_to "Ред.", edit_admin_city_path(city), class: "text-sm text-blue-600 hover:underline" %>
+        <%= button_to "Удалить", admin_city_path(city), method: :delete,
+            form: { data: { turbo_confirm: "Удалить город «#{city.name}» со всеми турами и страницами?" } },
+            class: "text-sm text-red-600 hover:underline bg-transparent border-0 p-0 cursor-pointer" %>
+      </div>
+    </div>
+  <% end %>
+
+  <% if @cities.empty? %>
+    <p class="text-gray-500">Городов пока нет.</p>
+  <% end %>
+</div>

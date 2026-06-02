@@ -15,26 +15,31 @@
     <p class="realm-subtitle">LEAGUE OF THRONES</p>
   </header>
 
+  <%# ── CITY SWITCHER ── %>
+  <%= render "shared/city_switcher" %>
+
   <%# ── NAV ── %>
   <nav class="flex justify-center gap-3 mb-6">
-    <%= link_to rules_path, class: "tour-scroll tour-scroll-active", style: "min-width: 120px; text-align: center; justify-content: center;" do %>
+    <%= link_to city_rules_path(@city), class: "tour-scroll tour-scroll-active", style: "min-width: 120px; text-align: center; justify-content: center;" do %>
       Правила
     <% end %>
-    <a href="https://t.me/aesmic" target="_blank" rel="noopener noreferrer" class="tour-scroll tour-scroll-active" style="min-width: 120px; text-align: center; justify-content: center;">
-      Записаться
-    </a>
+    <% if @city.register_url.present? %>
+      <a href="<%= @city.register_url %>" target="_blank" rel="noopener noreferrer" class="tour-scroll tour-scroll-active" style="min-width: 120px; text-align: center; justify-content: center;">
+        Записаться
+      </a>
+    <% end %>
   </nav>
 
   <%# ── TOUR BADGES ── %>
   <% if @tours.any? %>
     <p class="text-center mb-2" style="color: var(--gold); font-family: var(--font-pixel, monospace); font-size: 0.85rem; letter-spacing: 0.1em;">РАСПИСАНИЕ ТУРОВ</p>
     <div class="flex justify-center gap-2 mb-6 flex-wrap items-stretch">
-      <%= link_to root_path, class: "tour-scroll #{'tour-scroll-selected' unless @selected_tour} tour-scroll-active", style: "text-decoration: none; text-align: center; display: inline-flex; align-items: center; align-self: stretch;" do %>
+      <%= link_to city_leaderboard_path(@city), class: "tour-scroll #{'tour-scroll-selected' unless @selected_tour} tour-scroll-active", style: "text-decoration: none; text-align: center; display: inline-flex; align-items: center; align-self: stretch;" do %>
         &#x1F3C6; Рейтинг
       <% end %>
       <% @tours.each do |tour| %>
         <% selected = @selected_tour&.id == tour.id %>
-        <% tour_url = selected ? root_path : root_path(tour: tour.number) %>
+        <% tour_url = selected ? city_leaderboard_path(@city) : city_leaderboard_path(@city, tour: tour.number) %>
         <%= link_to tour_url, class: "tour-scroll #{'tour-scroll-selected' if selected} #{'tour-scroll-active' if tour.played_on}", style: "text-decoration: none; text-align: center;" do %>
           &#x2694;&#xFE0F; <%= tour.number %>
           <% if tour.date_range_label %>
@@ -77,7 +82,7 @@
               <tbody>
                 <% results.each do |gr| %>
                   <tr data-action="click->row-click#open"
-                      data-row-click-url-param="<%= player_path(gr.player) %>">
+                      data-row-click-url-param="<%= city_player_path(@city, gr.player) %>">
                     <td>
                       <% if gr.place %>
                         <span class="rank-num <%= 'rank-crown' if gr.place <= 3 %>"><%= gr.place %></span>
@@ -165,7 +170,7 @@
 
               <tr class="league-row-<%= league_key %>"
                   data-action="click->row-click#open"
-                  data-row-click-url-param="<%= player_path(rp.player) %>">
+                  data-row-click-url-param="<%= city_player_path(@city, rp.player) %>">
 
                 <%# Rank %>
                 <td>

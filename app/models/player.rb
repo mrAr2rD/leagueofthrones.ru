@@ -2,6 +2,8 @@ class Player < ApplicationRecord
   scope :participating_in_tournament, -> { where("players.participates_in_tournament IS NOT FALSE") }
 
   has_many :game_results, dependent: :destroy
+  has_many :player_cities, dependent: :destroy
+  has_many :cities, through: :player_cities
   has_one_attached :photo
 
   validates :first_name, :nickname, presence: true

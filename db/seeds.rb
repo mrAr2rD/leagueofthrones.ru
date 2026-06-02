@@ -4,6 +4,15 @@ AdminUser.find_or_create_by!(login: "admin") do |u|
 end
 puts "Admin user created (login: admin)"
 
+# Город по умолчанию — все туры, страницы и игроки привязаны к нему.
+moscow = City.find_or_create_by!(slug: "moscow") do |c|
+  c.name = "Москва"
+  c.register_url = "https://t.me/aesmic"
+  c.default_format = GameFormat::DEFAULT_KEY
+  c.position = 0
+end
+puts "City created (#{moscow.name})"
+
 def assign_houses_for_players(players, used_houses_by_player, rng)
   player_options = players.map do |player|
     available_houses = GameResult::HOUSE_LABELS.keys - used_houses_by_player.fetch(player.id, [])
@@ -201,10 +210,9 @@ rules_content = <<~RULES
   🎲 Секретный ачивмент — узнаем в конце турнира
 RULES
 
-SitePage.find_or_create_by!(slug: "rules") do |p|
-  p.title = "Регламент турнира"
-  p.content = rules_content.strip
-end
+# Страница «Правила» автосоздаётся при создании города; здесь задаём полный текст.
+rules_page = SitePage.find_or_initialize_by(slug: "rules", city: moscow)
+rules_page.update!(title: "Регламент турнира", content: rules_content.strip)
 puts "Rules page created"
 
 # 32 players
@@ -251,9 +259,13 @@ players = players_data.map do |data|
 end
 puts "#{players.size} players created"
 
+# Привязываем всех игроков к городу по умолчанию.
+players.each { |player| PlayerCity.find_or_create_by!(player: player, city: moscow) }
+puts "#{moscow.players.count} players linked to #{moscow.name}"
+
 # 8 tours
 tours = (1..8).map do |n|
-  Tour.find_or_create_by!(number: n) do |t|
+  Tour.find_or_create_by!(number: n, city: moscow) do |t|
     t.played_on = n <= 3 ? Date.new(2026, 1, n * 7) : nil
     t.played = n <= 3
     base_date = Date.new(2026, 1, 1) + (n - 1) * 14
@@ -376,5 +388,5 @@ seed_case_game!(
 puts "Admin corner cases seeded in tour 4 table B"
 
 # Set initial rankings
-RankingCalculator.recalculate!
+RankingCalculator.recalculate!(moscow)
 puts "Rankings calculated"

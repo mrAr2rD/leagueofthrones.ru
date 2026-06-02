@@ -1,0 +1,19 @@
+daenerys_moscow:
+  player: daenerys
+  city: moscow
+
+jon_moscow:
+  player: jon
+  city: moscow
+
+cersei_moscow:
+  player: cersei
+  city: moscow
+
+arya_moscow:
+  player: arya
+  city: moscow
+
+sansa_moscow:
+  player: sansa
+  city: moscow

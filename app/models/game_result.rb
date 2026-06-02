@@ -1,25 +1,17 @@
 class GameResult < ApplicationRecord
-  HOUSE_LABELS = {
-    "stark" => "Старк",
-    "lannister" => "Ланнистер",
-    "baratheon" => "Баратеон",
-    "greyjoy" => "Грейджой",
-    "tyrell" => "Тирелл",
-    "martell" => "Мартелл",
-    "arryn" => "Аррен",
-    "targaryen" => "Таргариен"
-  }.freeze
+  # Ярлыки домов — суперсет всех форматов (для рендера старых строк).
+  HOUSE_LABELS = GameFormat::ALL_HOUSE_LABELS
 
   HOUSE_OPTIONS = HOUSE_LABELS.map { |key, label| [ label, key ] }.freeze
-  PLACE_POINTS = { 1 => 12, 2 => 7, 3 => 6, 4 => 5, 5 => 4, 6 => 3, 7 => 2, 8 => 1 }.freeze
-  TABLE_A_BONUS_PLACES = [ 1, 2, 3 ].freeze
-  MAX_CAPITAL_POINTS = 3
+  # Сохранены для обратной совместимости (тесты/сиды). Реальный подсчёт идёт
+  # через формат тура — см. #game_format и self.calculate_points.
+  MAX_CAPITAL_POINTS = GameFormat.default.capital_cap
   MAX_CASTLES_POINTS = 5
 
   belongs_to :game
   belongs_to :player
 
-  validates :place, numericality: { in: 1..8, only_integer: true }, allow_nil: true
+  validates :place, numericality: { only_integer: true }, allow_nil: true
   validates :points, numericality: { only_integer: true }, allow_nil: true
   validates :capitals, :dragons, :castles,
             numericality: { greater_than_or_equal_to: 0, only_integer: true }, allow_nil: true
@@ -28,20 +20,19 @@ class GameResult < ApplicationRecord
   validates :house,
             presence: { message: "должен быть выбран для занятого слота" },
             if: :player_id?
-  validates :house,
-            inclusion: { in: HOUSE_LABELS.keys, message: "выбран некорректно" },
-            allow_blank: true
+  validate :place_within_format_range
+  validate :house_allowed_in_format
   validate :player_unique_within_game
   validate :house_unique_within_game
   validate :house_unique_for_player
 
-  def self.house_options
-    HOUSE_OPTIONS
+  def self.house_options(format: GameFormat.default)
+    format.house_options
   end
 
-  def self.house_options_for(used_houses: [])
+  def self.house_options_for(used_houses: [], format: GameFormat.default)
     used_houses = Array(used_houses)
-    HOUSE_OPTIONS.reject { |(_label, key)| used_houses.include?(key) }
+    format.house_options.reject { |(_label, key)| used_houses.include?(key) }
   end
 
   def self.effective_capitals(capitals:, capital_captures: nil, capital_controls: nil)
@@ -50,12 +41,12 @@ class GameResult < ApplicationRecord
     capital_captures.to_i + capital_controls.to_i
   end
 
-  def self.capital_points(capitals:, capital_captures: nil, capital_controls: nil)
+  def self.capital_points(capitals:, capital_captures: nil, capital_controls: nil, format: GameFormat.default)
     [ effective_capitals(
       capitals: capitals,
       capital_captures: capital_captures,
       capital_controls: capital_controls
-    ), MAX_CAPITAL_POINTS ].min
+    ), format.capital_cap ].min
   end
 
   def self.ranking_captures(capitals:, capital_captures: nil, capital_controls: nil)
@@ -64,21 +55,22 @@ class GameResult < ApplicationRecord
     capital_captures.to_i
   end
 
-  def self.calculate_points(place:, capitals: 0, capital_captures: nil, capital_controls: nil, dragons:, castles:, table_letter:)
+  def self.calculate_points(place:, capitals: 0, capital_captures: nil, capital_controls: nil, dragons:, castles:, table_letter:, format: GameFormat.default)
     normalized_place = place.to_i
     return nil if normalized_place <= 0
 
-    place_points = PLACE_POINTS.fetch(normalized_place, 0)
-    table_bonus = table_letter == "A" && TABLE_A_BONUS_PLACES.include?(normalized_place) ? 1 : 0
+    place_points = format.place_points_for(normalized_place)
+    table_bonus = table_letter == "A" && format.table_a_bonus?(normalized_place) ? 1 : 0
 
     place_points + table_bonus +
       capital_points(
         capitals: capitals,
         capital_captures: capital_captures,
-        capital_controls: capital_controls
+        capital_controls: capital_controls,
+        format: format
       ) +
       dragons.to_i +
-      [ castles.to_i, MAX_CASTLES_POINTS ].min
+      format.castle_points(castles)
   end
 
   def suggested_points
@@ -97,8 +89,14 @@ class GameResult < ApplicationRecord
     self.class.capital_points(
       capitals: capitals,
       capital_captures: capital_captures,
-      capital_controls: capital_controls
+      capital_controls: capital_controls,
+      format: game_format
     )
+  end
+
+  # Формат тура, к которому относится этот результат (дефолт — Мать драконов).
+  def game_format
+    game&.tour&.game_format || GameFormat.default
   end
 
   def ranking_captures
@@ -127,8 +125,25 @@ class GameResult < ApplicationRecord
       capital_controls: capital_controls,
       dragons: dragons,
       castles: castles,
-      table_letter: game&.table_letter
+      table_letter: game&.table_letter,
+      format: game_format
     )
+  end
+
+  def place_within_format_range
+    return if place.blank?
+
+    range = game_format.place_range
+    return if range.cover?(place)
+
+    errors.add(:place, "должно быть от #{range.min} до #{range.max}")
+  end
+
+  def house_allowed_in_format
+    return if house.blank?
+    return if game_format.house_keys.include?(house)
+
+    errors.add(:house, "выбран некорректно")
   end
 
   def player_unique_within_game

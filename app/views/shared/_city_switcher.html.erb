@@ -1,0 +1,14 @@
+<%# Переключатель городов на публичных страницах. Показывается только при >1 городе. %>
+<% if City.many? %>
+  <div class="flex justify-center flex-wrap gap-2 mb-6" data-testid="city-switcher">
+    <% City.ordered.each do |switch_city| %>
+      <% active = switch_city.id == @city.id %>
+      <%= link_to city_leaderboard_path(switch_city),
+          class: "tour-scroll #{'tour-scroll-selected' if active} tour-scroll-active",
+          style: "text-decoration: none; text-align: center; min-width: 120px; justify-content: center;",
+          aria: { current: active ? "page" : nil } do %>
+        &#x1F3F0; <%= switch_city.name %>
+      <% end %>
+    <% end %>
+  </div>
+<% end %>

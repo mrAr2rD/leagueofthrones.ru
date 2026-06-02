@@ -2,7 +2,7 @@ class GalleryController < ApplicationController
   before_action :require_gallery_auth!, only: :show
 
   def show
-    @players = Player.order(:last_name, :first_name)
+    @players = Player.includes(:cities).order(:last_name, :first_name)
   end
 
   def login

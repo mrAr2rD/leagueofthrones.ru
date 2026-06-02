@@ -1,0 +1,13 @@
+rules_moscow:
+  title: Регламент турнира
+  slug: rules
+  city: moscow
+  content: |
+    Правила турнира в Москве.
+
+rules_spb:
+  title: Регламент турнира (СПб)
+  slug: rules
+  city: spb
+  content: |
+    Правила турнира в Санкт-Петербурге.

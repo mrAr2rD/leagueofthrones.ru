@@ -26,7 +26,8 @@
   <%# ── GALLERY GRID ── %>
   <div class="gallery-grid">
     <% @players.each do |player| %>
-      <%= link_to player_path(player), class: "gallery-card" do %>
+      <% player_city = player.cities.min_by(&:position) %>
+      <% card_body = capture do %>
         <div class="gallery-card-portrait">
           <% if player.photo.attached? %>
             <%= image_tag player.photo_large, alt: player.nickname %>
@@ -38,6 +39,11 @@
           <div class="gallery-card-name"><%= player.display_name %></div>
           <div class="gallery-card-nick">&laquo; <%= player.nickname %> &raquo;</div>
         </div>
+      <% end %>
+      <% if player_city %>
+        <%= link_to card_body, city_player_path(player_city, player), class: "gallery-card" %>
+      <% else %>
+        <div class="gallery-card"><%= card_body %></div>
       <% end %>
     <% end %>
   </div>

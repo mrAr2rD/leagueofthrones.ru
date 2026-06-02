@@ -4,31 +4,44 @@ class RankingCalculator
     :games_played, :rank, :league, :rank_change, :last_tour_points, keyword_init: true
   )
 
+  # Цвет и название лиг постоянны; границы рангов зависят от формата города
+  # (размер дивизиона = число игроков за столом) — см. #league_for.
   LEAGUES = {
-    gold:   { range: 1..8,   color: "#FFD700", label: "Золотая" },
-    silver: { range: 9..16,  color: "#C0C0C0", label: "Серебряная" },
-    bronze: { range: 17..24, color: "#CD7F32", label: "Бронзовая" },
-    iron:   { range: 25..32, color: "#4B4B4B", label: "Железная" }
+    gold:   { color: "#FFD700", label: "Золотая" },
+    silver: { color: "#C0C0C0", label: "Серебряная" },
+    bronze: { color: "#CD7F32", label: "Бронзовая" },
+    iron:   { color: "#4B4B4B", label: "Железная" }
   }.freeze
 
-  def self.call
-    new.call
+  LEAGUE_ORDER = %i[gold silver bronze iron].freeze
+
+  def self.call(city)
+    new(city).call
   end
 
-  def self.recalculate!
-    rankings = call
-    Player.transaction do
+  def self.recalculate!(city)
+    rankings = call(city)
+    # Прежний ранг хранится отдельно по каждому городу (player_cities),
+    # чтобы «прирост» не смешивался между городами.
+    PlayerCity.transaction do
       rankings.each do |rp|
-        rp.player.update_column(:previous_rank, rp.rank)
+        city.player_cities.where(player_id: rp.player.id).update_all(previous_rank: rp.rank)
       end
     end
     rankings
   end
 
+  def initialize(city)
+    @city = city
+  end
+
   def call
-    players = Player.participating_in_tournament.includes(game_results: { game: :tour })
-    @played_tour_ids = Tour.played.pluck(:id).to_set
-    @last_tour = Tour.played.order(number: :desc).first
+    players = @city.players.participating_in_tournament.includes(game_results: { game: :tour })
+    @tier = @city.default_game_format.league_tier_size
+    @played_tour_ids = @city.tours.played.pluck(:id).to_set
+    @last_tour = @city.tours.played.order(number: :desc).first
+    # Прежний ранг — свой в каждом городе (player_cities.previous_rank).
+    @previous_ranks = @city.player_cities.pluck(:player_id, :previous_rank).to_h
     ranked = players.map { |player| build_ranking(player) }
 
     ranked.sort_by! { |rp| [ -rp.best6_points, -rp.wins, -rp.captures, -rp.dragons, -rp.lands ] }
@@ -36,7 +49,7 @@ class RankingCalculator
     ranked.each_with_index do |rp, idx|
       rp.rank = idx + 1
       rp.league = league_for(rp.rank)
-      rp.rank_change = rank_change(rp.player.previous_rank, rp.rank)
+      rp.rank_change = rank_change(@previous_ranks[rp.player.id], rp.rank)
     end
 
     ranked
@@ -71,10 +84,8 @@ class RankingCalculator
   end
 
   def league_for(rank)
-    LEAGUES.each do |key, config|
-      return key if config[:range].cover?(rank)
-    end
-    :iron
+    index = (rank - 1) / @tier
+    LEAGUE_ORDER.fetch([ index, LEAGUE_ORDER.size - 1 ].min)
   end
 
   def rank_change(previous, current)

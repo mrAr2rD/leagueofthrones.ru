@@ -14,7 +14,7 @@ module Admin
 
     def update
       save_results
-      RankingCalculator.recalculate!
+      RankingCalculator.recalculate!(@tour.city)
       redirect_to admin_tour_path(@tour), notice: "Результаты сохранены"
     rescue ActiveRecord::RecordInvalid => e
       messages = e.record.errors.map(&:message).presence || [ e.message ]
@@ -31,7 +31,7 @@ module Admin
     end
 
     def load_form_options
-      @players = Player.all.sort_by { |player| [ player.admin_option_label.downcase, player.id ] }
+      @players = @tour.city.players.to_a.sort_by { |player| [ player.admin_option_label.downcase, player.id ] }
       @player_options = @players.map { |player| [ player.admin_option_label, player.id ] }
       @player_options_by_selected = build_player_options_by_selected
       @player_tour_table_warnings = build_player_tour_table_warnings
@@ -41,7 +41,7 @@ module Admin
 
     def ensure_result_slots
       existing = @game.game_results.size
-      (8 - existing).times { @game.game_results.build }
+      (@tour.game_format.players_per_table - existing).times { @game.game_results.build }
     end
 
     def build_player_house_options

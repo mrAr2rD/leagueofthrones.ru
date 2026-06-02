@@ -11,6 +11,7 @@
       controller: "points-calculator slot-toggle",
       action: "submit->slot-toggle#validateBeforeSubmit",
       points_calculator_table_letter_value: @game.table_letter,
+      points_calculator_format_value: @tour.game_format.to_config_json,
       slot_toggle_all_player_options_value: @player_options.to_json,
       slot_toggle_player_tour_table_warnings_value: @player_tour_table_warnings.to_json,
       slot_toggle_all_house_options_value: @house_options.to_json,
@@ -91,7 +92,7 @@
 
             <div class="min-w-0">
               <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500 lg:hidden">Место</label>
-              <%= grf.number_field :place, min: 1, max: 8, class: "h-12 w-full rounded border border-gray-300 px-3 text-center text-sm leading-5",
+              <%= grf.number_field :place, min: 1, max: @tour.game_format.place_range.max, class: "h-12 w-full rounded border border-gray-300 px-3 text-center text-sm leading-5",
                   data: { action: "input->points-calculator#calculate", points_calculator_target: "place" } %>
             </div>
 

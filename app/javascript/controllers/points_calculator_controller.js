@@ -1,13 +1,17 @@
 import { Controller } from "@hotwired/stimulus"
 
-const PLACE_POINTS = { 1: 12, 2: 7, 3: 6, 4: 5, 5: 4, 6: 3, 7: 2, 8: 1 }
-const MAX_CAPITAL_POINTS = 3
-const MAX_CASTLES_POINTS = 5
-const TABLE_A_BONUS_PLACES = new Set([1, 2, 3])
+// Правила подсчёта приходят из формата тура (data-...-format-value).
+// Источник правды — app/models/game_format.rb (#to_config_json).
+const DEFAULT_FORMAT = {
+  placePoints: { 1: 12, 2: 7, 3: 6, 4: 5, 5: 4, 6: 3, 7: 2, 8: 1 },
+  tableABonusPlaces: [1, 2, 3],
+  capitalCap: 3,
+  castleRule: { type: "linear_cap", cap: 5 }
+}
 
 export default class extends Controller {
   static targets = ["row"]
-  static values = { tableLetter: String }
+  static values = { tableLetter: String, format: Object }
 
   connect() {
     this.rowTargets.forEach((row) => {
@@ -64,18 +68,38 @@ export default class extends Controller {
       suggested === null || currentPoints === null ? "0" : String(currentPoints - suggested)
   }
 
+  get format() {
+    const value = this.formatValue
+    return value && Object.keys(value).length ? value : DEFAULT_FORMAT
+  }
+
   suggestedPointsFor(row) {
     const place = parseInt(row.querySelector("[data-points-calculator-target='place']")?.value) || 0
     if (place <= 0) return null
 
+    const format = this.format
     const capitals = this.effectiveCapitalsFor(row)
     const dragons = parseInt(row.querySelector("[data-points-calculator-target='dragons']")?.value) || 0
     const castles = parseInt(row.querySelector("[data-points-calculator-target='castles']")?.value) || 0
 
-    const base = PLACE_POINTS[place] || 0
-    const tableBonus = this.tableLetterValue === "A" && TABLE_A_BONUS_PLACES.has(place) ? 1 : 0
+    const base = format.placePoints[place] || 0
+    const tableBonus =
+      this.tableLetterValue === "A" && (format.tableABonusPlaces || []).includes(place) ? 1 : 0
 
-    return base + tableBonus + Math.min(capitals, MAX_CAPITAL_POINTS) + dragons + Math.min(castles, MAX_CASTLES_POINTS)
+    return base + tableBonus + Math.min(capitals, format.capitalCap) + dragons + this.castlePointsFor(castles)
+  }
+
+  castlePointsFor(castles) {
+    const rule = this.format.castleRule || DEFAULT_FORMAT.castleRule
+    const count = parseInt(castles) || 0
+
+    if (rule.type === "band") {
+      const row = (rule.table || []).find(([min, max]) => count >= min && (max === null || count <= max))
+      return row ? row[2] : 0
+    }
+
+    // linear_cap (по умолчанию)
+    return Math.min(count, rule.cap)
   }
 
   effectiveCapitalsFor(row) {

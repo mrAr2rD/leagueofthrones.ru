@@ -1,0 +1,13 @@
+moscow:
+  name: Москва
+  slug: moscow
+  register_url: https://t.me/aesmic
+  default_format: mother_of_dragons
+  position: 0
+
+spb:
+  name: Санкт-Петербург
+  slug: spb
+  register_url: https://t.me/spb
+  default_format: classic
+  position: 1

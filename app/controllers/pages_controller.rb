@@ -1,5 +1,7 @@
 class PagesController < ApplicationController
+  include CityScoped
+
   def rules
-    @page = SitePage.find_by_slug!("rules")
+    @page = @city.site_pages.find_by!(slug: "rules")
   end
 end

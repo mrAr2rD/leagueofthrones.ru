@@ -1,0 +1,6 @@
+<div class="flex items-center justify-between mb-6">
+  <h1 class="text-2xl font-bold">Новый тур</h1>
+  <%= link_to "← Назад", admin_tours_path, class: "text-gray-500 hover:text-gray-700 text-sm" %>
+</div>
+
+<%= render "form", tour: @tour %>

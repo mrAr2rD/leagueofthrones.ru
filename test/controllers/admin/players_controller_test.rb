@@ -41,6 +41,25 @@ module Admin
       assert_not players(:daenerys).reload.participates_in_tournament?
     end
 
+    test "assigns cities to a new player" do
+      post admin_players_url, params: { player: {
+        first_name: "Многогородний", nickname: "@multi_city",
+        city_ids: [ cities(:moscow).id, cities(:spb).id ]
+      } }
+
+      player = Player.find_by(nickname: "@multi_city")
+      assert_equal [ cities(:moscow), cities(:spb) ].sort_by(&:id), player.cities.sort_by(&:id)
+    end
+
+    test "updates a player's cities" do
+      player = players(:daenerys)
+      assert_includes player.cities, cities(:moscow)
+
+      patch admin_player_url(player), params: { player: { city_ids: [ cities(:spb).id ] } }
+
+      assert_equal [ cities(:spb) ], player.reload.cities.to_a
+    end
+
     test "should destroy player" do
       player = Player.create!(first_name: "Temp", nickname: "temp_test")
       assert_difference("Player.count", -1) do

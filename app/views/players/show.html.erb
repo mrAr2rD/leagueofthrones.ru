@@ -2,10 +2,12 @@
 
   <%# ── Back link ── %>
   <div class="mb-6">
-    <%= link_to root_path, class: "pixel-back-link" do %>
+    <%= link_to city_leaderboard_path(@city), class: "pixel-back-link" do %>
       <span class="icon-sword"></span> Назад к таблице
     <% end %>
   </div>
+
+  <%= render "shared/city_switcher" %>
 
   <%# ── Player Card ── %>
   <div class="pixel-box pixel-box-gold p-6">

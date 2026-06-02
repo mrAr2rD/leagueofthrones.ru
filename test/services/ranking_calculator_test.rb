@@ -6,57 +6,71 @@ class RankingCalculatorTest < ActiveSupport::TestCase
   end
 
   test "returns ranked players" do
-    rankings = RankingCalculator.call
+    rankings = RankingCalculator.call(cities(:moscow))
     assert_kind_of Array, rankings
     assert rankings.all? { |rp| rp.is_a?(RankingCalculator::RankedPlayer) }
   end
 
   test "ranks are assigned 1 to N" do
-    rankings = RankingCalculator.call
+    rankings = RankingCalculator.call(cities(:moscow))
     assert_equal (1..rankings.size).to_a, rankings.map(&:rank)
   end
 
   test "sorted by best6_points descending" do
-    rankings = RankingCalculator.call
+    rankings = RankingCalculator.call(cities(:moscow))
     points = rankings.map(&:best6_points)
     assert_equal points, points.sort.reverse
   end
 
   test "assigns leagues correctly" do
-    rankings = RankingCalculator.call
+    rankings = RankingCalculator.call(cities(:moscow))
     first = rankings.first
     assert_includes [ :gold, :silver, :bronze, :iron ], first.league
   end
 
   test "excludes players without tournament participation from rankings" do
-    active_player = Player.create!(first_name: "Активный", nickname: "@ranking_active")
-    inactive_player = Player.create!(first_name: "Неактивный", nickname: "@ranking_hidden", participates_in_tournament: false)
+    active_player = create_moscow_player(first_name: "Активный", nickname: "@ranking_active")
+    inactive_player = create_moscow_player(first_name: "Неактивный", nickname: "@ranking_hidden", participates_in_tournament: false)
 
-    ranking_player_ids = RankingCalculator.call.map { |rp| rp.player.id }
+    ranking_player_ids = RankingCalculator.call(cities(:moscow)).map { |rp| rp.player.id }
 
     assert_includes ranking_player_ids, active_player.id
     assert_not_includes ranking_player_ids, inactive_player.id
   end
 
-  test "recalculate! updates previous_rank" do
-    RankingCalculator.recalculate!
-    daenerys = players(:daenerys).reload
-    assert_not_nil daenerys.previous_rank
+  test "recalculate! updates previous_rank per city" do
+    RankingCalculator.recalculate!(cities(:moscow))
+    player_city = PlayerCity.find_by(player: players(:daenerys), city: cities(:moscow))
+    assert_not_nil player_city.previous_rank
   end
 
   test "rank_change calculated after recalculate" do
-    RankingCalculator.recalculate!
-    rankings = RankingCalculator.call
+    RankingCalculator.recalculate!(cities(:moscow))
+    rankings = RankingCalculator.call(cities(:moscow))
     daenerys_ranking = rankings.find { |rp| rp.player.id == players(:daenerys).id }
     assert_not_nil daenerys_ranking.rank_change
   end
 
+  test "previous_rank is tracked separately per city and not mixed" do
+    player = Player.create!(first_name: "Двугородний", nickname: "@two_cities")
+    PlayerCity.create!(player: player, city: cities(:moscow))
+    PlayerCity.create!(player: player, city: cities(:spb))
+
+    RankingCalculator.recalculate!(cities(:moscow))
+
+    moscow_pc = PlayerCity.find_by(player: player, city: cities(:moscow))
+    spb_pc = PlayerCity.find_by(player: player, city: cities(:spb))
+
+    assert_not_nil moscow_pc.previous_rank
+    assert_nil spb_pc.previous_rank, "пересчёт Москвы не должен трогать ранг СПб"
+  end
+
   test "leaderboard uses saved game_result points and keeps only the best six games" do
-    player = Player.create!(first_name: "Лидерборд", nickname: "@leaderboard_case")
+    player = create_moscow_player(first_name: "Лидерборд", nickname: "@leaderboard_case")
     houses = GameResult::HOUSE_LABELS.keys
     played_tours = [ tours(:tour_two) ] +
       (3..8).map do |number|
-        Tour.create!(number: number, played: true, played_on: Date.new(2026, 1, number))
+        Tour.create!(number: number, city: cities(:moscow), played: true, played_on: Date.new(2026, 1, number))
       end
 
     tours(:tour_two).update!(played: true)
@@ -92,7 +106,7 @@ class RankingCalculatorTest < ActiveSupport::TestCase
       )
     end
 
-    rankings = RankingCalculator.call
+    rankings = RankingCalculator.call(cities(:moscow))
     player_ranking = rankings.find { |rp| rp.player.id == player.id }
     all_points = player.game_results.order(:id).pluck(:points).sort.reverse
     latest_result = player.game_results.joins(game: :tour).order("tours.number DESC").first
@@ -103,9 +117,10 @@ class RankingCalculatorTest < ActiveSupport::TestCase
   end
 
   test "multiple games in one played tour count as separate games and sum last tour points" do
-    player = Player.create!(first_name: "Мульти", nickname: "@same_tour_multi")
+    player = create_moscow_player(first_name: "Мульти", nickname: "@same_tour_multi")
     tour = Tour.create!(
       number: 8,
+      city: cities(:moscow),
       played: true,
       played_on: Date.new(2026, 4, 1),
       starts_on: Date.new(2026, 3, 31),
@@ -281,12 +296,19 @@ class RankingCalculatorTest < ActiveSupport::TestCase
 
   private
 
+  # Лидерборд скоупится городом через player_cities — привязываем игрока к Москве.
+  def create_moscow_player(**attrs)
+    player = Player.create!(**attrs)
+    PlayerCity.create!(player: player, city: cities(:moscow))
+    player
+  end
+
   def ranking_for(player)
-    RankingCalculator.call.find { |rp| rp.player.id == player.id }
+    RankingCalculator.call(cities(:moscow)).find { |rp| rp.player.id == player.id }
   end
 
   def create_ranked_player(nickname:, place:, points:, capitals: 0, capital_captures: nil, capital_controls: nil, dragons: 0, lands: 0)
-    player = Player.create!(first_name: "Тайбрейк", nickname: nickname)
+    player = create_moscow_player(first_name: "Тайбрейк", nickname: nickname)
     create_ranked_result(
       tour: create_played_tour,
       player: player,
@@ -307,6 +329,7 @@ class RankingCalculatorTest < ActiveSupport::TestCase
     @tour_sequence += 1
     Tour.create!(
       number: @tour_sequence,
+      city: cities(:moscow),
       played: true,
       played_on: Date.new(2026, 3, 1) + @tour_sequence
     )

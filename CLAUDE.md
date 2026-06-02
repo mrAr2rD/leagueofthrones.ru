@@ -52,3 +52,8 @@ Stimulus controllers in `app/javascript/controllers/` drive admin game editor in
 - When changing admin result behavior, update view, Stimulus controllers, server-side validations, and tests together.
 - Seeded admin credentials: login `admin`, password `password`.
 - DB names: `i_pr_development` / `i_pr_test`. Config assumes the current OS user for PostgreSQL unless overridden with `DATABASE_URL` or `PG*` env vars.
+
+## See Also
+
+- `AGENTS.md` — detailed agent guide: repo map, highest-value files per change area, seeded review pages, and a disposable Docker PostgreSQL one-liner.
+- Deployment uses Kamal (`.kamal/`, `bin/kamal`, `Dockerfile`); background jobs run via `bin/jobs` (Solid Queue).

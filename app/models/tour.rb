@@ -1,9 +1,13 @@
 class Tour < ApplicationRecord
+  belongs_to :city
   has_many :games, dependent: :destroy
   has_many :game_results, through: :games
 
-  validates :number, presence: true, uniqueness: true,
-            numericality: { in: 1..8, only_integer: true }
+  validates :number, presence: true,
+            uniqueness: { scope: :city_id },
+            numericality: { only_integer: true, greater_than: 0 }
+  validates :format, inclusion: { in: GameFormat.keys }
+  validate :number_within_format
   validate :ends_on_after_starts_on
 
   scope :ordered, -> { order(:number) }
@@ -11,6 +15,11 @@ class Tour < ApplicationRecord
 
   # Автоматически: нет даты → не сыграно
   before_validation :unplay_if_no_date
+
+  # Формат тура задаёт правила подсчёта и число слотов.
+  def game_format
+    GameFormat.find(self[:format])
+  end
 
   def display_name
     "Тур #{number}"
@@ -32,6 +41,14 @@ class Tour < ApplicationRecord
 
   def unplay_if_no_date
     self.played = false if played_on.blank?
+  end
+
+  # Число туров ограничено форматом (Мать драконов — 8, Классика — 6).
+  def number_within_format
+    return if number.blank? || !number.is_a?(Integer)
+
+    max = game_format.tour_default_count
+    errors.add(:number, "должен быть от 1 до #{max} для формата «#{game_format.label}»") if number > max
   end
 
   def ends_on_after_starts_on

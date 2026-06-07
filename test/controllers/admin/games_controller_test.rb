@@ -218,6 +218,18 @@ module Admin
       assert_equal 17, saved_result.suggested_points
     end
 
+    test "treats cleared dragons and castles as zero instead of crashing" do
+      game = games(:game_1a)
+      result = game_results(:daenerys_game1)
+
+      patch_game(game, submitted_result_attributes(result, dragons: "", castles: ""))
+
+      assert_redirected_to admin_tour_url(tours(:tour_one))
+      saved_result = game.reload.game_results.find_by!(player_id: result.player_id)
+      assert_equal 0, saved_result.dragons
+      assert_equal 0, saved_result.castles
+    end
+
     test "mother of dragons game renders eight result slots" do
       get edit_admin_tour_game_url(tours(:tour_one), games(:game_1a))
 
@@ -233,6 +245,37 @@ module Admin
 
       assert_response :success
       assert_select "[data-points-calculator-target=row]", count: 6
+    end
+
+    test "mother of dragons game editor shows dragons and skulls columns" do
+      get edit_admin_tour_game_url(tours(:tour_one), games(:game_1a))
+
+      assert_response :success
+      assert_match "Драконы", response.body
+      assert_match "Черепки", response.body
+    end
+
+    test "classic game editor hides dragons and skulls columns" do
+      classic_tour = cities(:moscow).tours.create!(number: 3, format: "classic")
+      classic_game = Game.create!(tour: classic_tour, table_letter: "A")
+
+      get edit_admin_tour_game_url(classic_tour, classic_game)
+
+      assert_response :success
+      assert_no_match "Драконы", response.body
+      assert_no_match "Черепки", response.body
+    end
+
+    test "classic game house dropdown excludes targaryen and arryn" do
+      classic_tour = cities(:moscow).tours.create!(number: 3, format: "classic")
+      classic_game = Game.create!(tour: classic_tour, table_letter: "A")
+
+      get edit_admin_tour_game_url(classic_tour, classic_game)
+
+      assert_response :success
+      assert_match "Старк", response.body
+      assert_no_match "Таргариен", response.body
+      assert_no_match "Аррен", response.body
     end
 
     test "player options are scoped to the tour's city" do

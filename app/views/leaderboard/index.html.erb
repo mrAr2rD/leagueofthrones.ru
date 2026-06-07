@@ -75,7 +75,9 @@
                   <th class="text-center">Очки</th>
                   <th class="text-center hide-mobile">Дом</th>
                   <th class="text-center hide-mobile">Захваты</th>
-                  <th class="text-center hide-mobile">Драконы</th>
+                  <% if @selected_tour.game_format.tracks_dragons? %>
+                    <th class="text-center hide-mobile">Драконы</th>
+                  <% end %>
                   <th class="text-center hide-mobile">Замки</th>
                 </tr>
               </thead>
@@ -112,7 +114,9 @@
                     </td>
                     <td class="stat-cell hide-mobile"><%= gr.house_name %></td>
                     <td class="stat-cell hide-mobile"><%= gr.capital_captures || gr.capitals || 0 %></td>
-                    <td class="stat-cell hide-mobile"><%= gr.dragons || 0 %></td>
+                    <% if @selected_tour.game_format.tracks_dragons? %>
+                      <td class="stat-cell hide-mobile"><%= gr.dragons || 0 %></td>
+                    <% end %>
                     <td class="stat-cell hide-mobile"><%= gr.castles || 0 %></td>
                   </tr>
                 <% end %>
@@ -152,7 +156,9 @@
               <th class="text-center hide-mobile">Игры</th>
               <th class="text-center hide-mobile">Победы</th>
               <th class="text-center hide-mobile">Захваты</th>
-              <th class="text-center hide-mobile">Драконы</th>
+              <% if @city.default_game_format.tracks_dragons? %>
+                <th class="text-center hide-mobile">Драконы</th>
+              <% end %>
               <th class="text-center" style="width: 60px;">Прирост</th>
             </tr>
           </thead>
@@ -164,7 +170,7 @@
 
               <%# League divider %>
               <% if prev_league && prev_league != league_key %>
-                <tr class="league-divider"><td colspan="9"></td></tr>
+                <tr class="league-divider"><td colspan="<%= @city.default_game_format.tracks_dragons? ? 9 : 8 %>"></td></tr>
               <% end %>
               <% prev_league = league_key %>
 
@@ -205,7 +211,9 @@
                 <td class="stat-cell hide-mobile"><%= rp.games_played %></td>
                 <td class="stat-cell hide-mobile"><%= rp.wins %></td>
                 <td class="stat-cell hide-mobile"><%= rp.captures %></td>
-                <td class="stat-cell hide-mobile"><%= rp.dragons %></td>
+                <% if @city.default_game_format.tracks_dragons? %>
+                  <td class="stat-cell hide-mobile"><%= rp.dragons %></td>
+                <% end %>
 
                 <%# Last tour points %>
                 <td class="text-center">

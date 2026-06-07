@@ -5,6 +5,11 @@ module Admin
       lands skulls dragons castles
     ].freeze
 
+    # Счётчики с NOT NULL и дефолтом 0 в БД. Пустое поле в форме (админ стёр
+    # значение) должно означать «0», а не NULL — иначе insert_all! падает
+    # PG::NotNullViolation (валидации это пропускают, allow_nil: true).
+    NOT_NULL_COUNTERS = %w[capitals dragons castles].freeze
+
     before_action :set_tour_and_game
     before_action -> { authorize_city!(@tour.city) }
     before_action :load_form_options, only: [ :edit, :update ]
@@ -36,7 +41,7 @@ module Admin
       @player_options = @players.map { |player| [ player.admin_option_label, player.id ] }
       @player_options_by_selected = build_player_options_by_selected
       @player_tour_table_warnings = build_player_tour_table_warnings
-      @house_options = GameResult.house_options
+      @house_options = GameResult.house_options(format: @tour.game_format)
       @player_house_options = build_player_house_options
     end
 
@@ -56,7 +61,10 @@ module Admin
       end
 
       @players.each_with_object({}) do |player, options|
-        options[player.id.to_s] = GameResult.house_options_for(used_houses: used_houses_by_player[player.id])
+        options[player.id.to_s] = GameResult.house_options_for(
+          used_houses: used_houses_by_player[player.id],
+          format: @tour.game_format
+        )
       end
     end
 
@@ -135,7 +143,11 @@ module Admin
     end
 
     def clean_result_attributes(attrs)
-      attrs.to_h.slice(*RESULT_ATTRIBUTES).transform_values(&:presence)
+      attrs.to_h.slice(*RESULT_ATTRIBUTES).to_h do |key, value|
+        cleaned = value.presence
+        cleaned = 0 if cleaned.nil? && NOT_NULL_COUNTERS.include?(key)
+        [ key, cleaned ]
+      end
     end
 
     def ensure_rows_complete!(rows)

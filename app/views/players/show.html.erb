@@ -49,10 +49,12 @@
           <span class="player-summary-value"><%= @results.sum(&:ranking_captures) %></span>
           <span class="player-summary-label">Захваты</span>
         </div>
-        <div class="player-summary-item">
-          <span class="player-summary-value"><%= @results.sum { |r| r.dragons || 0 } %></span>
-          <span class="player-summary-label">Драконы</span>
-        </div>
+        <% if @city.default_game_format.tracks_dragons? %>
+          <div class="player-summary-item">
+            <span class="player-summary-value"><%= @results.sum { |r| r.dragons || 0 } %></span>
+            <span class="player-summary-label">Драконы</span>
+          </div>
+        <% end %>
         <div class="player-summary-item">
           <span class="player-summary-value"><%= @results.sum { |r| r.castles || 0 } %></span>
           <span class="player-summary-label">Замки</span>
@@ -71,7 +73,9 @@
             <col class="player-stats-col-place">
             <col class="player-stats-col-points">
             <col class="player-stats-col-stat">
-            <col class="player-stats-col-stat">
+            <% if @city.default_game_format.tracks_dragons? %>
+              <col class="player-stats-col-stat">
+            <% end %>
             <col class="player-stats-col-stat">
           </colgroup>
           <thead>
@@ -91,11 +95,13 @@
                   <span class="icon-capture"></span>
                 </span>
               </th>
-              <th>
-                <span class="player-stats-heading-icon">
-                  <span class="icon-dragon"></span>
-                </span>
-              </th>
+              <% if @city.default_game_format.tracks_dragons? %>
+                <th>
+                  <span class="player-stats-heading-icon">
+                    <span class="icon-dragon"></span>
+                  </span>
+                </th>
+              <% end %>
               <th>
                 <span class="player-stats-heading-icon">
                   <span class="icon-castle"></span>
@@ -121,7 +127,9 @@
                 </td>
                 <td class="player-stats-points"><%= r.points %></td>
                 <td><%= r.ranking_captures %></td>
-                <td><%= r.dragons %></td>
+                <% if @city.default_game_format.tracks_dragons? %>
+                  <td><%= r.dragons %></td>
+                <% end %>
                 <td><%= r.castles %></td>
               </tr>
             <% end %>

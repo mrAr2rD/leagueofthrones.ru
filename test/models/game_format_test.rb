@@ -67,6 +67,20 @@ class GameFormatTest < ActiveSupport::TestCase
     assert_equal 4, classic.castle_points(99)
   end
 
+  test "mother of dragons tracks dragons and skulls" do
+    mod = GameFormat.find("mother_of_dragons")
+
+    assert mod.tracks_dragons?
+    assert mod.tracks_skulls?
+  end
+
+  test "classic tracks neither dragons nor skulls" do
+    classic = GameFormat.find("classic")
+
+    assert_not classic.tracks_dragons?
+    assert_not classic.tracks_skulls?
+  end
+
   test "league tier size equals players per table" do
     assert_equal 8, GameFormat.find("mother_of_dragons").league_tier_size
     assert_equal 6, GameFormat.find("classic").league_tier_size

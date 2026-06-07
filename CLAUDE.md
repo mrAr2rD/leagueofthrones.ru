@@ -41,7 +41,13 @@ The public site is scoped by **city**, addressed by a URL prefix `/:city` (param
 `RankingCalculator.call(city)` rebuilds a city's leaderboard; `RankingCalculator.recalculate!(city)` also persists ranks. It scopes players via `city.players` (participating only) and points to that city's **played** tours. League tiers (gold/silver/bronze/iron) are sized by the city's `default_game_format.league_tier_size`. `previous_rank` lives on `player_cities` (not `players`) so rank deltas never mix across cities. Re-run it after any result change — the admin game save does this.
 
 ### Admin (flat, not nested under city)
-`/admin` (login `admin` / `password` seeded). Controllers are flat: cities (CRUD, addressed by slug), players (CRUD + `city_ids` checkboxes for membership), tours (CRUD with a `_form` choosing city/format, `?city=slug` filter), pages (CRUD, addressed by **id** since slug is no longer globally unique), and games (nested under tours). The game result editor (`admin/games_controller.rb`) builds `format.players_per_table` slots, scopes selectable players to the tour's city, and saves via `delete_all + insert_all` preserving hidden round-trip fields.
+`/admin` (login `admin` / `password` seeded). Controllers are flat: cities (CRUD, slug-addressed), admins (`admin_users`, CRUD), players (CRUD + `city_ids` checkboxes), tours (CRUD with a `_form` choosing city/format/**tables_count**, `?city=slug` filter), pages (CRUD, **id**-addressed since slug is per-city now), and games (nested under tours). The game result editor (`admin/games_controller.rb`) builds `format.players_per_table` slots, scopes selectable players to the tour's city, and saves via `delete_all + insert_all` preserving hidden round-trip fields.
+
+### Tables per tour
+A tour has `tables_count` (1..`Game::TABLE_LETTERS.size`, i.e. 1–4). `Tour#table_letters` is `A..N`; `Tour#sync_tables` creates missing tables and deletes empty extras (tables that already have results are kept). Sync is called explicitly from `Admin::ToursController#create/#update` — **not** an `after_save` callback, because that would auto-create games and break tests/flows that build games manually. Players-per-table (format) and tables-per-tour are independent dimensions.
+
+### Access control (roles)
+`AdminUser` has a `superadmin` flag and `admin_user_cities` (→ `cities`). `Admin::BaseController` exposes `superadmin?`, `accessible_cities`, `require_superadmin!`, and `authorize_city!(city)` (all `helper_method` where views need them). **Superadmins** manage everything incl. Cities and Admins. **Regular admins** are restricted to assigned cities: tours/games/pages are authorized via `authorize_city!`; their index scopes are limited to `accessible_cities`. Players are global — a regular admin sees only players in their cities, edits preserve a player's links to cities they don't manage (`resolved_city_ids`), and only superadmins delete players. The admin nav hides Cities/Admins for non-superadmins. Existing admins were backfilled to `superadmin = true` so nobody is locked out.
 
 ## Domain Rules
 
@@ -50,6 +56,7 @@ The public site is scoped by **city**, addressed by a URL prefix `/:city` (param
 - Capital scoring: `capital_captures` + `capital_controls` when at least one split field is present; otherwise legacy `capitals`. Bonus capped at the format's `capital_cap` (3).
 - Tie-break order: `best6_points` > `wins` > ranking `captures` > `dragons` > `lands`.
 - Ranking `captures` use `capital_captures` for split rows, legacy `capitals` when both split fields are NULL; `capital_controls` never counts for ranking captures. `skulls` are stored but never affect ranking. `place` may be NULL (draft assignments).
+- A tour's `format` only affects its own games (suggested points, slots, tie-break, league tier); it does **not** retroactively recompute already-saved `GameResult#points` — the leaderboard sums stored points. Different cities can run different formats (e.g. Moscow 8-player, a new city 6-player).
 
 ## Conventions
 

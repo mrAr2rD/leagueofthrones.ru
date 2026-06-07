@@ -10,8 +10,9 @@
 - `City`: a tournament location, addressed by `slug` (`to_param`). Has many tours, site pages, player_cities; has many players through player_cities. Holds `default_format`. Auto-creates its "rules" page on create.
 - `PlayerCity`: join between players and cities (city roster). Holds `previous_rank` (per-city, for rank deltas).
 - `Player`: tournament participant (photo, nickname). Belongs to many cities through player_cities; appears only on the leaderboards of cities it is linked to.
-- `Tour`: tournament round. Belongs to a city. Has a `format`; `number` is unique within a city and bounded by the format's tour count.
-- `Game`: table inside a tour. `Game::TABLE_LETTERS = A..D`.
+- `Tour`: tournament round. Belongs to a city. Has a `format` and `tables_count` (1–4); `number` unique within a city, bounded by the format's tour count. `Tour#sync_tables` reconciles its games (tables) to `tables_count`.
+- `Game`: table inside a tour. `Game::TABLE_LETTERS = A..D` (cap on tables_count).
+- `AdminUser`: has `superadmin` flag and `cities` (through `admin_user_cities`). Superadmin = full access; regular admin = scoped to assigned cities. `accessible_cities`, `can_access_city?`.
 - `GameResult`: one player's result at one table — house, place, bonus stats, points. Capital scoring splits into `capital_captures` + `capital_controls`, with legacy fallback to `capitals` when both split fields are `NULL`.
 - `GameFormat` (plain Ruby, not a model): registry of formats (`mother_of_dragons` = 8/table, `classic` = 6/table). **Single source of truth for scoring** — place points, table-A bonus, capital cap, and a data-driven `castle_rule`. `#to_config_json` is the contract consumed by the JS points calculator.
 - `SitePage`: editable static content (e.g. rules), belongs to a city; `slug` unique per city.
@@ -100,10 +101,15 @@ Seeded admin credentials:
 - Ranking side-effect: `app/services/ranking_calculator.rb`
 - Tests: `test/controllers/admin/games_controller_test.rb`, `test/models/game_result_test.rb`
 
-### Admin city / tour / page / player management
-- `app/controllers/admin/{cities,tours,pages,players}_controller.rb` and `app/views/admin/{cities,tours,pages,players}`
-- `app/models/{city,tour,site_page,player,player_city}.rb`
-- Tests: `test/controllers/admin/{cities,tours,pages,players}_controller_test.rb`, `test/models/{city,tour}_test.rb`
+### Admin city / tour / page / player / admin management
+- `app/controllers/admin/{cities,tours,pages,players,admin_users}_controller.rb` and `app/views/admin/{cities,tours,pages,players,admin_users}`
+- `app/models/{city,tour,site_page,player,player_city,admin_user,admin_user_city}.rb`
+- Tests: `test/controllers/admin/{cities,tours,pages,players,admin_users}_controller_test.rb`, `test/models/{city,tour,admin_user}_test.rb`
+
+### Access control (roles) & tables per tour
+- `app/controllers/admin/base_controller.rb` — `superadmin?`, `accessible_cities`, `require_superadmin!`, `authorize_city!`. Cities & AdminUsers controllers are superadmin-only; Tours/Games/Pages/Players authorize/scope by city.
+- Tables: `Tour#tables_count` + `Tour#sync_tables`, called from `Admin::ToursController#create/#update`; selector in `app/views/admin/tours/_form.html.erb`.
+- Tests: `test/controllers/admin/access_control_test.rb`, `test/controllers/admin/admin_users_controller_test.rb`
 
 ### Public leaderboard and player pages
 - `app/controllers/{leaderboard,players}_controller.rb`, `app/views/{leaderboard,players}`
@@ -122,6 +128,9 @@ Seeded admin credentials:
 - Keep public player profile wording/data consistent with the leaderboard; show `ranking_captures` in the captures column and castles in the rightmost castle-icon column; results are scoped to the visited city's tours.
 - `skulls` are stored but do not affect ranking. `place` may be `NULL` for draft assignments.
 - Ranking is recalculated (for the tour's city) after saving game results.
+- A tour's `tables_count` (1–4) controls how many tables (games A–N) it has; reducing it only removes empty tables. Players-per-table comes from the format, independent of tables_count.
+- Changing a tour's `format` does NOT recompute already-saved `points`; the leaderboard sums stored points. Cities can run different formats (e.g. 8-player Moscow, 6-player new city).
+- Regular admins act only within their assigned cities. Players are global: a regular admin sees players in their cities, edits keep a player's links to other cities, and only superadmins delete players.
 
 ## Working Conventions For Agents
 - Read `config/routes.rb` first when exploring behavior.
@@ -129,7 +138,7 @@ Seeded admin credentials:
 - Do not edit `db/schema.rb` manually; generate migrations.
 - Change scoring rules only in `app/models/game_format.rb`, then mirror in `points_calculator_controller.js` — never duplicate the math elsewhere.
 - When changing admin result behavior, update all of: view, both Stimulus controllers, server-side validations / save flow, and relevant controller/model tests. The save flow recreates rows with `delete_all + insert_all`; preserve hidden round-trip fields.
-- The project uses fixtures, not factories. Records created inline in tests must satisfy multi-city constraints: tours/pages need a `city:`; players need a `PlayerCity` link to appear on a city's leaderboard (`test/fixtures/cities.yml`, `player_cities.yml`, `site_pages.yml`).
+- The project uses fixtures, not factories. Records created inline in tests must satisfy multi-city constraints: tours/pages need a `city:`; players need a `PlayerCity` link to appear on a city's leaderboard (`test/fixtures/cities.yml`, `player_cities.yml`, `site_pages.yml`). Admin fixtures: `admin` is `superadmin: true`, `city_admin` is a regular admin scoped to Moscow via `admin_user_cities.yml`.
 - Seeds are a realistic local scenario; avoid breaking `bin/rails db:seed:replant`.
 
 ## Done Criteria

@@ -9,6 +9,26 @@ class PlayersControllerTest < ActionDispatch::IntegrationTest
     assert_no_match "Участие в турнире", response.body
   end
 
+  test "profile shows dragons for a mother of dragons city" do
+    get city_player_url(cities(:moscow), players(:daenerys))
+    assert_response :success
+    assert_match "Драконы", response.body
+  end
+
+  test "profile hides dragons for a classic city" do
+    player = Player.create!(first_name: "Питерец", nickname: "@spb_profile")
+    PlayerCity.create!(player: player, city: cities(:spb))
+    tour = Tour.create!(number: 1, city: cities(:spb), format: "classic", played: true, played_on: Date.new(2026, 1, 7))
+    game = Game.create!(tour: tour, table_letter: "A")
+    GameResult.create!(game: game, player: player, house: "stark", place: 1, points: 12, capitals: 0, dragons: 0, castles: 0)
+
+    get city_player_url(cities(:spb), player)
+
+    assert_response :success
+    assert_match "Старк", response.body # профиль отрисован (есть результаты)
+    assert_no_match "Драконы", response.body
+  end
+
   test "show uses captures wording and history values" do
     player = Player.create!(first_name: "Профиль", nickname: "@profile_captures")
     PlayerCity.create!(player: player, city: cities(:moscow))

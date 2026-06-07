@@ -12,6 +12,18 @@ class LeaderboardControllerTest < ActionDispatch::IntegrationTest
     assert_match "samzakharov", response.body
   end
 
+  test "shows the dragons column for a mother of dragons city" do
+    get city_leaderboard_url(cities(:moscow))
+    assert_response :success
+    assert_match "Драконы", response.body
+  end
+
+  test "hides the dragons column for a classic city" do
+    get city_leaderboard_url(cities(:spb))
+    assert_response :success
+    assert_no_match "Драконы", response.body
+  end
+
   test "hides players without tournament participation" do
     visible = Player.create!(first_name: "Публичный", nickname: "@public_board")
     hidden = Player.create!(first_name: "Скрытый", nickname: "@hidden_board", participates_in_tournament: false)

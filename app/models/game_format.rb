@@ -96,6 +96,16 @@ class GameFormat
     houses.keys
   end
 
+  # Драконы и черепки — механики дополнения «Мать драконов»; в классическом
+  # формате этих столбцов нет (ни в админ-вводе, ни в публичных таблицах).
+  def tracks_dragons?
+    key != "classic"
+  end
+
+  def tracks_skulls?
+    key != "classic"
+  end
+
   def house_options
     houses.map { |house_key, label| [ label, house_key ] }
   end

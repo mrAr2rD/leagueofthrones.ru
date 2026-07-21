@@ -110,12 +110,12 @@
     </div>
   </section>
 
-  <section>
+  <section id="statistics-players">
     <h2 class="mb-3 text-lg font-semibold text-gray-900">Все игроки</h2>
     <% captures_max = @statistics.nomination("conqueror")&.max_value.to_i %>
     <% dragons_max = @statistics.nomination("dragon_slayer")&.max_value.to_i %>
     <% skulls_max = @statistics.nomination("faceless_chosen")&.max_value.to_i %>
-    <% sort_path_params = { city: @city.slug, game_format: @game_format.key } %>
+    <% sort_path_params = { city: @city.slug, game_format: @game_format.key, anchor: "statistics-players" } %>
 
     <div class="hidden overflow-x-auto rounded-lg bg-white shadow md:block" data-testid="statistics-desktop-table">
       <table class="w-full min-w-[42rem] text-sm">

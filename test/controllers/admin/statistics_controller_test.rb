@@ -97,13 +97,15 @@ module Admin
       get admin_statistics_url(city: tournament[:city].slug, game_format: "mother_of_dragons")
 
       assert_response :success
+      assert_select "section#statistics-players", count: 1
       assert_select "input[name=sort][value=captures]", count: 1
       assert_select "th[aria-sort=descending] [data-testid=statistics-sort-captures][data-active=true]", count: 1
       assert_select "[data-testid=statistics-mobile-sort-captures][data-active=true]", text: /Захваты ↓/
       dragons_sort_path = admin_statistics_path(
         city: tournament[:city].slug,
         game_format: "mother_of_dragons",
-        sort: "dragons"
+        sort: "dragons",
+        anchor: "statistics-players"
       )
       assert_select "[data-testid=statistics-sort-dragons][href=?]", dragons_sort_path, count: 1
       assert_select "[data-testid=statistics-mobile-sort-dragons][href=?]", dragons_sort_path, count: 1

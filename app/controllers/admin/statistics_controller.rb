@@ -1,5 +1,7 @@
 module Admin
   class StatisticsController < BaseController
+    SORT_METRICS = %w[captures dragons skulls].freeze
+
     def show
       @cities = accessible_cities.to_a
       if @cities.empty?
@@ -15,6 +17,8 @@ module Admin
         city: @city,
         format: @game_format
       )
+      @sort_metric = selected_sort_metric
+      @statistics_rows = sorted_statistics_rows
       load_publication_state
     end
 
@@ -31,6 +35,33 @@ module Admin
     def selected_game_format
       key = params[:game_format].presence || @city.default_format
       GameFormat::FORMATS[key] || @city.default_game_format
+    end
+
+    def selected_sort_metric
+      metric = params[:sort].to_s
+      available_sort_metrics.include?(metric) ? metric : "captures"
+    end
+
+    def available_sort_metrics
+      SORT_METRICS.select do |metric|
+        metric == "captures" ||
+          (metric == "dragons" && @game_format.tracks_dragons?) ||
+          (metric == "skulls" && @game_format.tracks_skulls?)
+      end
+    end
+
+    def sorted_statistics_rows
+      tie_breakers = available_sort_metrics - [ @sort_metric ]
+
+      @statistics.rows.sort_by do |row|
+        [
+          -row.public_send(@sort_metric),
+          *tie_breakers.map { |metric| -row.public_send(metric) },
+          row.player.display_name.to_s.downcase,
+          row.player.nickname.to_s.downcase,
+          row.player.id
+        ]
+      end
     end
 
     def load_publication_state

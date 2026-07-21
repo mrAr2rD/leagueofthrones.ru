@@ -51,7 +51,7 @@ module Admin
     test "classic statistics hide dragon and skull columns and nominations" do
       login_as(admin_users(:admin))
 
-      get admin_statistics_url(city: cities(:spb).slug, game_format: "classic")
+      get admin_statistics_url(city: cities(:spb).slug, game_format: "classic", sort: "skulls")
 
       assert_response :success
       assert_match "Завоеватель", response.body
@@ -59,6 +59,8 @@ module Admin
       assert_no_match "Избранник Безликих", response.body
       assert_no_match ">Драконы<", response.body
       assert_no_match ">Черепки<", response.body
+      assert_select "[data-testid=statistics-sort-captures][data-active=true]", count: 1
+      assert_select "[data-testid=statistics-sort-skulls]", count: 0
     end
 
     test "statistics renders separate responsive desktop table and mobile player cards" do
@@ -86,6 +88,62 @@ module Admin
       assert_select "[data-achievement-key=conqueror] img[src*='achievements/conqueror']", count: 1
       assert_select "[data-achievement-key=dragon_slayer] img[src*='achievements/dragon_slayer']", count: 1
       assert_select "[data-achievement-key=faceless_chosen] img[src*='achievements/faceless_chosen']", count: 1
+    end
+
+    test "statistics defaults to captures descending and marks the selected column" do
+      login_as(admin_users(:admin))
+      tournament = create_complete_tournament
+
+      get admin_statistics_url(city: tournament[:city].slug, game_format: "mother_of_dragons")
+
+      assert_response :success
+      assert_select "input[name=sort][value=captures]", count: 1
+      assert_select "th[aria-sort=descending] [data-testid=statistics-sort-captures][data-active=true]", count: 1
+      assert_select "[data-testid=statistics-mobile-sort-captures][data-active=true]", text: /Захваты ↓/
+      dragons_sort_path = admin_statistics_path(
+        city: tournament[:city].slug,
+        game_format: "mother_of_dragons",
+        sort: "dragons"
+      )
+      assert_select "[data-testid=statistics-sort-dragons][href=?]", dragons_sort_path, count: 1
+      assert_select "[data-testid=statistics-mobile-sort-dragons][href=?]", dragons_sort_path, count: 1
+      assert_equal [ 2, 2, 1, 0, 0, 0, 0, 0 ], desktop_metric_values("captures")
+    end
+
+    test "statistics sorts dragons descending and marks the selected column" do
+      login_as(admin_users(:admin))
+      tournament = create_complete_tournament
+      tournament[:results].third.update!(dragons: 7)
+
+      get admin_statistics_url(
+        city: tournament[:city].slug,
+        game_format: "mother_of_dragons",
+        sort: "dragons"
+      )
+
+      assert_response :success
+      assert_select "th[aria-sort=descending] [data-testid=statistics-sort-dragons][data-active=true]", count: 1
+      assert_select "[data-testid=statistics-mobile-sort-dragons][data-active=true]", text: /Драконы ↓/
+      assert_equal tournament[:players].third.id, desktop_player_ids.first
+      assert_equal [ 7, 3, 1, 0, 0, 0, 0, 0 ], desktop_metric_values("dragons")
+    end
+
+    test "statistics sorts skulls descending and marks the selected column" do
+      login_as(admin_users(:admin))
+      tournament = create_complete_tournament
+      tournament[:results].fourth.update!(skulls: 9)
+
+      get admin_statistics_url(
+        city: tournament[:city].slug,
+        game_format: "mother_of_dragons",
+        sort: "skulls"
+      )
+
+      assert_response :success
+      assert_select "th[aria-sort=descending] [data-testid=statistics-sort-skulls][data-active=true]", count: 1
+      assert_select "[data-testid=statistics-mobile-sort-skulls][data-active=true]", text: /Черепки ↓/
+      assert_equal tournament[:players].fourth.id, desktop_player_ids.first
+      assert_equal [ 9, 4, 1, 0, 0, 0, 0, 0 ], desktop_metric_values("skulls")
     end
 
     test "publication is rejected when tournament data is incomplete" do
@@ -233,6 +291,14 @@ module Admin
 
     def published_awards(city)
       AchievementAward.for_tournament(city: city, game_format: "mother_of_dragons").published.order(:id).to_a
+    end
+
+    def desktop_player_ids
+      css_select("[data-testid=statistics-desktop-row]").map { |row| row["data-player-id"].to_i }
+    end
+
+    def desktop_metric_values(metric)
+      css_select("[data-testid=statistics-desktop-row]").map { |row| row["data-#{metric}"].to_i }
     end
 
     def create_complete_tournament

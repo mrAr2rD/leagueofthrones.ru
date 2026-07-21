@@ -17,6 +17,7 @@
   </div>
 
   <%= form_with url: admin_statistics_path, method: :get, class: "rounded-lg bg-white p-4 shadow" do %>
+    <%= hidden_field_tag :sort, @sort_metric %>
     <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_auto] lg:items-end">
       <div>
         <%= label_tag :city, "Город", class: "mb-1 block text-sm font-medium text-gray-700" %>
@@ -114,6 +115,7 @@
     <% captures_max = @statistics.nomination("conqueror")&.max_value.to_i %>
     <% dragons_max = @statistics.nomination("dragon_slayer")&.max_value.to_i %>
     <% skulls_max = @statistics.nomination("faceless_chosen")&.max_value.to_i %>
+    <% sort_path_params = { city: @city.slug, game_format: @game_format.key } %>
 
     <div class="hidden overflow-x-auto rounded-lg bg-white shadow md:block" data-testid="statistics-desktop-table">
       <table class="w-full min-w-[42rem] text-sm">
@@ -121,18 +123,50 @@
           <tr>
             <th class="px-4 py-3 text-left">Игрок</th>
             <th class="px-4 py-3 text-right">Игры</th>
-            <th class="px-4 py-3 text-right">Захваты столиц</th>
+            <th aria-sort="<%= @sort_metric == 'captures' ? 'descending' : 'none' %>"
+                class="p-0 text-right <%= @sort_metric == 'captures' ? 'bg-yellow-100 text-yellow-900' : 'hover:bg-gray-200' %>">
+              <%= link_to admin_statistics_path(**sort_path_params, sort: "captures"),
+                          aria: { label: "Сортировать по захватам столиц по убыванию" },
+                          data: { testid: "statistics-sort-captures", active: @sort_metric == "captures" },
+                          class: "flex w-full items-center justify-end gap-1 px-4 py-3 #{@sort_metric == 'captures' ? 'font-bold' : 'font-medium'}" do %>
+                <span>Захваты столиц</span>
+                <span aria-hidden="true" class="<%= @sort_metric == 'captures' ? '' : 'opacity-30' %>">↓</span>
+              <% end %>
+            </th>
             <% if @game_format.tracks_dragons? %>
-              <th class="px-4 py-3 text-right">Драконы</th>
+              <th aria-sort="<%= @sort_metric == 'dragons' ? 'descending' : 'none' %>"
+                  class="p-0 text-right <%= @sort_metric == 'dragons' ? 'bg-yellow-100 text-yellow-900' : 'hover:bg-gray-200' %>">
+                <%= link_to admin_statistics_path(**sort_path_params, sort: "dragons"),
+                            aria: { label: "Сортировать по драконам по убыванию" },
+                            data: { testid: "statistics-sort-dragons", active: @sort_metric == "dragons" },
+                            class: "flex w-full items-center justify-end gap-1 px-4 py-3 #{@sort_metric == 'dragons' ? 'font-bold' : 'font-medium'}" do %>
+                  <span>Драконы</span>
+                  <span aria-hidden="true" class="<%= @sort_metric == 'dragons' ? '' : 'opacity-30' %>">↓</span>
+                <% end %>
+              </th>
             <% end %>
             <% if @game_format.tracks_skulls? %>
-              <th class="px-4 py-3 text-right">Черепки</th>
+              <th aria-sort="<%= @sort_metric == 'skulls' ? 'descending' : 'none' %>"
+                  class="p-0 text-right <%= @sort_metric == 'skulls' ? 'bg-yellow-100 text-yellow-900' : 'hover:bg-gray-200' %>">
+                <%= link_to admin_statistics_path(**sort_path_params, sort: "skulls"),
+                            aria: { label: "Сортировать по черепкам по убыванию" },
+                            data: { testid: "statistics-sort-skulls", active: @sort_metric == "skulls" },
+                            class: "flex w-full items-center justify-end gap-1 px-4 py-3 #{@sort_metric == 'skulls' ? 'font-bold' : 'font-medium'}" do %>
+                  <span>Черепки</span>
+                  <span aria-hidden="true" class="<%= @sort_metric == 'skulls' ? '' : 'opacity-30' %>">↓</span>
+                <% end %>
+              </th>
             <% end %>
           </tr>
         </thead>
         <tbody>
-          <% @statistics.rows.each do |row| %>
-            <tr class="border-b last:border-b-0 hover:bg-gray-50">
+          <% @statistics_rows.each do |row| %>
+            <tr class="border-b last:border-b-0 hover:bg-gray-50"
+                data-testid="statistics-desktop-row"
+                data-player-id="<%= row.player.id %>"
+                data-captures="<%= row.captures %>"
+                data-dragons="<%= row.dragons %>"
+                data-skulls="<%= row.skulls %>">
               <td class="px-4 py-3">
                 <div class="font-medium text-gray-900"><%= row.player.display_name %></div>
                 <div class="text-xs text-gray-500"><%= row.player.nickname %></div>
@@ -153,7 +187,7 @@
               <% end %>
             </tr>
           <% end %>
-          <% if @statistics.rows.empty? %>
+          <% if @statistics_rows.empty? %>
             <tr>
               <td colspan="5" class="px-4 py-8 text-center text-gray-500">В сыгранных турах пока нет результатов.</td>
             </tr>
@@ -163,7 +197,29 @@
     </div>
 
     <div class="space-y-3 md:hidden" data-testid="statistics-mobile-players">
-      <% @statistics.rows.each do |row| %>
+      <div class="rounded-lg bg-white p-3 shadow" data-testid="statistics-mobile-sort">
+        <div class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Сортировка по убыванию</div>
+        <div class="flex flex-wrap gap-2">
+          <%= link_to "Захваты#{' ↓' if @sort_metric == 'captures'}",
+                      admin_statistics_path(**sort_path_params, sort: "captures"),
+                      data: { testid: "statistics-mobile-sort-captures", active: @sort_metric == "captures" },
+                      class: "rounded-full border px-3 py-1.5 text-sm font-medium #{@sort_metric == 'captures' ? 'border-yellow-500 bg-yellow-100 text-yellow-900' : 'border-gray-300 bg-white text-gray-700'}" %>
+          <% if @game_format.tracks_dragons? %>
+            <%= link_to "Драконы#{' ↓' if @sort_metric == 'dragons'}",
+                        admin_statistics_path(**sort_path_params, sort: "dragons"),
+                        data: { testid: "statistics-mobile-sort-dragons", active: @sort_metric == "dragons" },
+                        class: "rounded-full border px-3 py-1.5 text-sm font-medium #{@sort_metric == 'dragons' ? 'border-yellow-500 bg-yellow-100 text-yellow-900' : 'border-gray-300 bg-white text-gray-700'}" %>
+          <% end %>
+          <% if @game_format.tracks_skulls? %>
+            <%= link_to "Черепки#{' ↓' if @sort_metric == 'skulls'}",
+                        admin_statistics_path(**sort_path_params, sort: "skulls"),
+                        data: { testid: "statistics-mobile-sort-skulls", active: @sort_metric == "skulls" },
+                        class: "rounded-full border px-3 py-1.5 text-sm font-medium #{@sort_metric == 'skulls' ? 'border-yellow-500 bg-yellow-100 text-yellow-900' : 'border-gray-300 bg-white text-gray-700'}" %>
+          <% end %>
+        </div>
+      </div>
+
+      <% @statistics_rows.each do |row| %>
         <article class="overflow-hidden rounded-lg bg-white shadow" data-testid="statistics-mobile-player">
           <div class="min-w-0 border-b border-gray-200 px-4 py-3">
             <div class="break-words font-semibold text-gray-900"><%= row.player.display_name %></div>
@@ -193,7 +249,7 @@
           </dl>
         </article>
       <% end %>
-      <% if @statistics.rows.empty? %>
+      <% if @statistics_rows.empty? %>
         <div class="rounded-lg bg-white px-4 py-8 text-center text-sm text-gray-500 shadow">
           В сыгранных турах пока нет результатов.
         </div>

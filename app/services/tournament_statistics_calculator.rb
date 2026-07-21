@@ -147,8 +147,6 @@ class TournamentStatisticsCalculator
       problems << "Тур #{tour.number}, стол #{game.table_letter}: стол не входит в текущую настройку тура, но содержит результаты."
       validate_result_fields(tour, game, problems)
     end
-
-    validate_player_table_uniqueness(tour, tour.games, problems)
   end
 
   def validate_game(tour, game, problems)
@@ -186,24 +184,6 @@ class TournamentStatisticsCalculator
     fields << "драконы" if @game_format.tracks_dragons? && result.dragons.nil?
     fields << "черепки" if @game_format.tracks_skulls? && result.skulls.nil?
     fields
-  end
-
-  def validate_player_table_uniqueness(tour, games, problems)
-    appearances = Hash.new { |hash, player_id| hash[player_id] = [] }
-
-    games.each do |game|
-      game.game_results.each do |result|
-        appearances[result.player_id] << [ game.table_letter, result.player ] if result.player_id
-      end
-    end
-
-    appearances.each_value do |entries|
-      table_letters = entries.map(&:first).uniq.sort
-      next unless table_letters.size > 1
-
-      player = entries.first.last
-      problems << "Тур #{tour.number}: игрок #{player.nickname} находится за несколькими столами (#{table_letters.join(', ')})."
-    end
   end
 
   def result_label(result)

@@ -124,15 +124,47 @@ class TournamentStatisticsCalculatorTest < ActiveSupport::TestCase
     assert result.problems.any? { |problem| problem.include?("места должны быть уникальными") }
   end
 
-  test "reports a player assigned to two tables of the same tour" do
+  test "allows a player to finish two games at different tables of the same tour" do
     tour = create_tour(number: 1, tables_count: 2)
     player = create_player
-    create_result(create_game(tour, "A"), player, house: "stark", place: 1)
-    create_result(create_game(tour, "B"), player, house: "lannister", place: 1)
+    first_game = create_game(tour, "A")
+    second_game = create_game(tour, "B")
+    create_result(first_game, player, house: "stark", place: 1, capitals: 2, dragons: 1, skulls: 3)
+    create_result(second_game, player, house: "lannister", place: 1, capitals: 4, dragons: 2, skulls: 5)
+    fill_game(first_game, excluded_houses: [ "stark" ])
+    fill_game(second_game, excluded_houses: [ "lannister" ])
 
     result = calculate
+    row = result.rows.find { |item| item.player.id == player.id }
 
-    assert result.problems.any? { |problem| problem.include?("находится за несколькими столами (A, B)") }
+    assert result.complete?, result.problems.inspect
+    assert_equal 2, row.games_count
+    assert_equal 6, row.captures
+    assert_equal 3, row.dragons
+    assert_equal 8, row.skulls
+  end
+
+  test "aggregates all eight player games without a top six limit" do
+    player = create_player
+
+    GameFormat.default.house_keys.each_with_index do |house, index|
+      tour = create_tour(number: index + 1)
+      create_result(
+        create_game(tour),
+        player,
+        house: house,
+        capitals: 1,
+        dragons: 2,
+        skulls: 3
+      )
+    end
+
+    row = calculate.rows.find { |item| item.player.id == player.id }
+
+    assert_equal 8, row.games_count
+    assert_equal 8, row.captures
+    assert_equal 16, row.dragons
+    assert_equal 24, row.skulls
   end
 
   test "reports results left in a table outside the current tour configuration" do
@@ -204,5 +236,17 @@ class TournamentStatisticsCalculatorTest < ActiveSupport::TestCase
       dragons: dragons,
       castles: 0
     )
+  end
+
+  def fill_game(game, excluded_houses:)
+    houses = GameFormat.default.house_keys - excluded_houses
+    houses.each_with_index do |house, index|
+      create_result(
+        game,
+        create_player,
+        house: house,
+        place: index + 2
+      )
+    end
   end
 end

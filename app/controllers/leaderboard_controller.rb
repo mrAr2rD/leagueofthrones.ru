@@ -9,6 +9,13 @@ class LeaderboardController < ApplicationController
         @games = @selected_tour.games.ordered.includes(game_results: :player)
       end
     end
-    @rankings = RankingCalculator.call(@city) unless @selected_tour
+    return if @selected_tour
+
+    @rankings = RankingCalculator.call(@city)
+    @achievement_awards_by_player_id = AchievementAward
+                                          .published
+                                          .where(city: @city, player_id: @rankings.map { |ranking| ranking.player.id })
+                                          .order(:achievement_key, :game_format)
+                                          .group_by(&:player_id)
   end
 end

@@ -17,6 +17,16 @@ Rails.application.routes.draw do
     resources :cities, except: [ :show ]
     resources :admin_users, except: [ :show ]
     resources :players
+    get "statistics", to: "statistics#show", as: :statistics
+    post "statistics/achievements/publish",
+         to: "achievement_publications#create",
+         as: :statistics_achievements_publish
+    patch "statistics/achievements/refresh",
+          to: "achievement_publications#update",
+          as: :statistics_achievements_refresh
+    delete "statistics/achievements/unpublish",
+           to: "achievement_publications#destroy",
+           as: :statistics_achievements_unpublish
     resources :tours, only: [ :index, :show, :new, :create, :edit, :update, :destroy ] do
       resources :games, only: [ :edit, :update ]
     end

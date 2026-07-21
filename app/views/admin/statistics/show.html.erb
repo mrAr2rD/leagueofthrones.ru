@@ -1,0 +1,230 @@
+<div class="space-y-6">
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">Турнирная статистика</h1>
+      <p class="mt-1 text-sm text-gray-500">Турнир определяется городом и игровым форматом.</p>
+    </div>
+
+    <% if @published_at %>
+      <div class="rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-800">
+        Опубликовано <%= l(@published_at, format: :short) %>
+      </div>
+    <% else %>
+      <div class="rounded-full bg-gray-200 px-3 py-1 text-sm font-medium text-gray-700">
+        Не опубликовано
+      </div>
+    <% end %>
+  </div>
+
+  <%= form_with url: admin_statistics_path, method: :get, class: "rounded-lg bg-white p-4 shadow" do %>
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_auto] lg:items-end">
+      <div>
+        <%= label_tag :city, "Город", class: "mb-1 block text-sm font-medium text-gray-700" %>
+        <%= select_tag :city,
+                       options_from_collection_for_select(@cities, :slug, :name, @city.slug),
+                       class: "w-full rounded border border-gray-300 bg-white px-3 py-2" %>
+      </div>
+      <div>
+        <%= label_tag :game_format, "Формат", class: "mb-1 block text-sm font-medium text-gray-700" %>
+        <%= select_tag :game_format,
+                       options_for_select(GameFormat.options, @game_format.key),
+                       class: "w-full rounded border border-gray-300 bg-white px-3 py-2" %>
+      </div>
+      <%= submit_tag "Показать",
+                     class: "w-full cursor-pointer rounded bg-gray-900 px-4 py-2 text-white hover:bg-gray-700 lg:w-auto" %>
+    </div>
+  <% end %>
+
+  <div class="grid gap-4 sm:grid-cols-2">
+    <div class="rounded-lg bg-white p-5 shadow">
+      <div class="text-sm text-gray-500">Сыграно туров</div>
+      <div class="mt-1 text-3xl font-bold text-gray-900"><%= @statistics.played_tours_count %></div>
+    </div>
+    <div class="rounded-lg bg-white p-5 shadow">
+      <div class="text-sm text-gray-500">Партий</div>
+      <div class="mt-1 text-3xl font-bold text-gray-900"><%= @statistics.games_count %></div>
+    </div>
+  </div>
+
+  <% unless @statistics.complete? %>
+    <section class="rounded-lg border border-amber-300 bg-amber-50 p-5" data-testid="statistics-problems">
+      <h2 class="font-semibold text-amber-900">Данные пока не готовы к публикации</h2>
+      <ul class="mt-3 list-disc space-y-1 pl-5 text-sm text-amber-900">
+        <% @statistics.problems.each do |problem| %>
+          <li><%= problem %></li>
+        <% end %>
+      </ul>
+    </section>
+  <% end %>
+
+  <% if @published_snapshot_differs %>
+    <div class="rounded-lg border border-red-300 bg-red-50 p-4 text-sm text-red-900" data-testid="published-awards-diff">
+      Рассчитанные лидеры или значения отличаются от опубликованных. Обновите публикацию, когда проверите данные.
+    </div>
+  <% end %>
+
+  <section>
+    <h2 class="mb-3 text-lg font-semibold text-gray-900">Номинации</h2>
+    <div class="grid gap-4 lg:grid-cols-3">
+      <% @statistics.nominations.each do |nomination| %>
+        <% definition = nomination.definition %>
+        <% published_awards = @published_awards_by_key.fetch(definition.key, []) %>
+        <article class="rounded-lg bg-white p-5 shadow" data-achievement-key="<%= definition.key %>">
+          <div class="flex items-start justify-between gap-3">
+            <%= image_tag definition.icon_path,
+                          alt: "",
+                          aria: { hidden: true },
+                          class: "h-12 w-12 shrink-0 object-contain",
+                          style: "image-rendering: pixelated;" %>
+            <span class="rounded-full bg-yellow-100 px-3 py-1 text-sm font-bold text-yellow-900">
+              Максимум: <%= nomination.max_value %>
+            </span>
+          </div>
+          <h3 class="mt-3 text-lg font-bold text-gray-900"><%= definition.name %></h3>
+          <p class="mt-1 text-sm text-gray-600"><%= definition.description %></p>
+
+          <div class="mt-4 border-t border-gray-100 pt-3">
+            <div class="text-xs font-semibold uppercase tracking-wide text-gray-400">Текущие лидеры</div>
+            <% if nomination.leaders.any? %>
+              <ul class="mt-2 space-y-1 text-sm font-medium text-gray-900">
+                <% nomination.leaders.each do |leader| %>
+                  <li><%= leader.player.display_name %> <span class="text-gray-500"><%= leader.player.nickname %></span></li>
+                <% end %>
+              </ul>
+            <% else %>
+              <p class="mt-2 text-sm text-gray-500">Нет лидера: максимальное значение равно нулю.</p>
+            <% end %>
+          </div>
+
+          <div class="mt-4 text-xs text-gray-500">
+            <% if published_awards.any? %>
+              Опубликовано: <%= published_awards.map(&:player).map(&:display_name).join(", ") %>
+              · <%= published_awards.first.stat_value %>
+            <% else %>
+              Не опубликовано
+            <% end %>
+          </div>
+        </article>
+      <% end %>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="mb-3 text-lg font-semibold text-gray-900">Все игроки</h2>
+    <% captures_max = @statistics.nomination("conqueror")&.max_value.to_i %>
+    <% dragons_max = @statistics.nomination("dragon_slayer")&.max_value.to_i %>
+    <% skulls_max = @statistics.nomination("faceless_chosen")&.max_value.to_i %>
+
+    <div class="hidden overflow-x-auto rounded-lg bg-white shadow md:block" data-testid="statistics-desktop-table">
+      <table class="w-full min-w-[42rem] text-sm">
+        <thead class="border-b bg-gray-100 text-gray-700">
+          <tr>
+            <th class="px-4 py-3 text-left">Игрок</th>
+            <th class="px-4 py-3 text-right">Игры</th>
+            <th class="px-4 py-3 text-right">Захваты столиц</th>
+            <% if @game_format.tracks_dragons? %>
+              <th class="px-4 py-3 text-right">Драконы</th>
+            <% end %>
+            <% if @game_format.tracks_skulls? %>
+              <th class="px-4 py-3 text-right">Черепки</th>
+            <% end %>
+          </tr>
+        </thead>
+        <tbody>
+          <% @statistics.rows.each do |row| %>
+            <tr class="border-b last:border-b-0 hover:bg-gray-50">
+              <td class="px-4 py-3">
+                <div class="font-medium text-gray-900"><%= row.player.display_name %></div>
+                <div class="text-xs text-gray-500"><%= row.player.nickname %></div>
+              </td>
+              <td class="px-4 py-3 text-right"><%= row.games_count %></td>
+              <td class="px-4 py-3 text-right <%= 'bg-yellow-100 font-bold text-yellow-900' if captures_max.positive? && row.captures == captures_max %>">
+                <%= row.captures %>
+              </td>
+              <% if @game_format.tracks_dragons? %>
+                <td class="px-4 py-3 text-right <%= 'bg-yellow-100 font-bold text-yellow-900' if dragons_max.positive? && row.dragons == dragons_max %>">
+                  <%= row.dragons %>
+                </td>
+              <% end %>
+              <% if @game_format.tracks_skulls? %>
+                <td class="px-4 py-3 text-right <%= 'bg-yellow-100 font-bold text-yellow-900' if skulls_max.positive? && row.skulls == skulls_max %>">
+                  <%= row.skulls %>
+                </td>
+              <% end %>
+            </tr>
+          <% end %>
+          <% if @statistics.rows.empty? %>
+            <tr>
+              <td colspan="5" class="px-4 py-8 text-center text-gray-500">В сыгранных турах пока нет результатов.</td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="space-y-3 md:hidden" data-testid="statistics-mobile-players">
+      <% @statistics.rows.each do |row| %>
+        <article class="overflow-hidden rounded-lg bg-white shadow" data-testid="statistics-mobile-player">
+          <div class="min-w-0 border-b border-gray-200 px-4 py-3">
+            <div class="break-words font-semibold text-gray-900"><%= row.player.display_name %></div>
+            <div class="break-all text-xs text-gray-500"><%= row.player.nickname %></div>
+          </div>
+          <dl class="grid grid-cols-2 gap-px bg-gray-200">
+            <div class="bg-white px-4 py-3">
+              <dt class="text-xs font-medium text-gray-500">Игры</dt>
+              <dd class="mt-1 text-lg font-semibold text-gray-900"><%= row.games_count %></dd>
+            </div>
+            <div class="px-4 py-3 <%= captures_max.positive? && row.captures == captures_max ? 'bg-yellow-100' : 'bg-white' %>">
+              <dt class="text-xs font-medium text-gray-500">Захваты столиц</dt>
+              <dd class="mt-1 text-lg font-semibold <%= captures_max.positive? && row.captures == captures_max ? 'text-yellow-900' : 'text-gray-900' %>"><%= row.captures %></dd>
+            </div>
+            <% if @game_format.tracks_dragons? %>
+              <div class="px-4 py-3 <%= dragons_max.positive? && row.dragons == dragons_max ? 'bg-yellow-100' : 'bg-white' %>">
+                <dt class="text-xs font-medium text-gray-500">Драконы</dt>
+                <dd class="mt-1 text-lg font-semibold <%= dragons_max.positive? && row.dragons == dragons_max ? 'text-yellow-900' : 'text-gray-900' %>"><%= row.dragons %></dd>
+              </div>
+            <% end %>
+            <% if @game_format.tracks_skulls? %>
+              <div class="px-4 py-3 <%= skulls_max.positive? && row.skulls == skulls_max ? 'bg-yellow-100' : 'bg-white' %>">
+                <dt class="text-xs font-medium text-gray-500">Черепки</dt>
+                <dd class="mt-1 text-lg font-semibold <%= skulls_max.positive? && row.skulls == skulls_max ? 'text-yellow-900' : 'text-gray-900' %>"><%= row.skulls %></dd>
+              </div>
+            <% end %>
+          </dl>
+        </article>
+      <% end %>
+      <% if @statistics.rows.empty? %>
+        <div class="rounded-lg bg-white px-4 py-8 text-center text-sm text-gray-500 shadow">
+          В сыгранных турах пока нет результатов.
+        </div>
+      <% end %>
+    </div>
+  </section>
+
+  <div class="flex flex-col gap-3 rounded-lg bg-white p-4 shadow sm:flex-row sm:items-center">
+    <% publication_params = { city_id: @city.id, game_format: @game_format.key } %>
+    <% if @published_at %>
+      <%= button_to "Обновить опубликованные награды",
+                    admin_statistics_achievements_refresh_path,
+                    method: :patch,
+                    params: publication_params,
+                    disabled: !@statistics.complete?,
+                    data: { turbo_confirm: "Заменить опубликованный набор текущими лидерами?" },
+                    class: "w-full rounded px-4 py-2 text-sm font-medium text-white sm:w-auto #{@statistics.complete? ? 'bg-blue-700 hover:bg-blue-600' : 'cursor-not-allowed bg-gray-400'}" %>
+      <%= button_to "Снять публикацию",
+                    admin_statistics_achievements_unpublish_path,
+                    method: :delete,
+                    params: publication_params,
+                    data: { turbo_confirm: "Скрыть все достижения этого турнира с публичных страниц?" },
+                    class: "w-full rounded bg-red-700 px-4 py-2 text-sm font-medium text-white hover:bg-red-600 sm:w-auto" %>
+    <% else %>
+      <%= button_to "Опубликовать достижения",
+                    admin_statistics_achievements_publish_path,
+                    method: :post,
+                    params: publication_params,
+                    disabled: !@statistics.complete?,
+                    data: { turbo_confirm: "Опубликовать рассчитанных победителей?" },
+                    class: "w-full rounded px-4 py-2 text-sm font-medium text-white sm:w-auto #{@statistics.complete? ? 'bg-green-700 hover:bg-green-600' : 'cursor-not-allowed bg-gray-400'}" %>
+    <% end %>
+  </div>
+</div>

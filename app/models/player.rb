@@ -4,6 +4,7 @@ class Player < ApplicationRecord
   has_many :game_results, dependent: :destroy
   has_many :player_cities, dependent: :destroy
   has_many :cities, through: :player_cities
+  has_many :achievement_awards, dependent: :destroy
   has_one_attached :photo
 
   validates :first_name, :nickname, presence: true
@@ -14,7 +15,7 @@ class Player < ApplicationRecord
   end
 
   def display_name
-    [first_name, last_name].compact_blank.join(" ")
+    [ first_name, last_name ].compact_blank.join(" ")
   end
 
   def nickname_handle
@@ -30,7 +31,7 @@ class Player < ApplicationRecord
   end
 
   def initials
-    parts = [first_name, last_name].compact_blank
+    parts = [ first_name, last_name ].compact_blank
     parts.map { |p| p[0] }.join
   end
 

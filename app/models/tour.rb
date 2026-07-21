@@ -50,9 +50,9 @@ class Tour < ApplicationRecord
     if starts_on.present? && ends_on.present?
       "#{starts_on.strftime('%d.%m')} – #{ends_on.strftime('%d.%m')}"
     elsif starts_on.present?
-      starts_on.strftime('%d.%m')
+      starts_on.strftime("%d.%m")
     else
-      ends_on.strftime('%d.%m')
+      ends_on.strftime("%d.%m")
     end
   end
 

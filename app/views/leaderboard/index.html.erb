@@ -198,7 +198,20 @@
 
                 <%# Name %>
                 <td>
-                  <div class="player-name"><%= rp.player.nickname&.delete_prefix("@") %></div>
+                  <div class="player-name-row">
+                    <div class="player-name"><%= rp.player.nickname&.delete_prefix("@") %></div>
+                    <% @achievement_awards_by_player_id.fetch(rp.player.id, []).each do |award| %>
+                      <% definition = award.definition %>
+                      <% tooltip = "#{definition.name} — #{definition.description}. #{award.game_format_definition.label}, результат: #{award.stat_value}" %>
+                      <span class="player-achievement-badge"
+                            data-achievement-key="<%= award.achievement_key %>"
+                            title="<%= tooltip %>"
+                            aria-label="<%= tooltip %>"
+                            tabindex="0">
+                        <%= image_tag definition.icon_path, alt: "", aria: { hidden: true } %>
+                      </span>
+                    <% end %>
+                  </div>
                   <div class="player-nick"><%= rp.player.display_name %></div>
                 </td>
 

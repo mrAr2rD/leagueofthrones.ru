@@ -1,8 +1,8 @@
-# Admin user
-AdminUser.find_or_create_by!(login: "admin") do |u|
-  u.password = ENV.fetch("ADMIN_PASSWORD", "password")
-  u.superadmin = true
-end
+# Admin users
+admin = AdminUser.find_or_initialize_by(login: "admin")
+admin.password = ENV.fetch("ADMIN_PASSWORD", "password")
+admin.superadmin = true
+admin.save!
 puts "Admin user created (login: admin)"
 
 # Город по умолчанию — все туры, страницы и игроки привязаны к нему.
@@ -13,6 +13,13 @@ moscow = City.find_or_create_by!(slug: "moscow") do |c|
   c.position = 0
 end
 puts "City created (#{moscow.name})"
+
+city_admin = AdminUser.find_or_initialize_by(login: "city_admin")
+city_admin.password = ENV.fetch("CITY_ADMIN_PASSWORD", "password")
+city_admin.superadmin = false
+city_admin.save!
+AdminUserCity.find_or_create_by!(admin_user: city_admin, city: moscow)
+puts "City admin created (login: city_admin, city: #{moscow.name})"
 
 def assign_houses_for_players(players, used_houses_by_player, rng)
   player_options = players.map do |player|
@@ -391,3 +398,5 @@ puts "Admin corner cases seeded in tour 4 table B"
 # Set initial rankings
 RankingCalculator.recalculate!(moscow)
 puts "Rankings calculated"
+puts "Achievement awards were not published by seeds"
+puts "Statistics demo is intentionally incomplete: fill the blank skull value in tour 1, table A before publishing"

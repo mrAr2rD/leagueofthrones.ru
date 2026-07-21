@@ -119,4 +119,82 @@ class PlayersControllerTest < ActionDispatch::IntegrationTest
 
     assert_select "[data-testid=city-switcher] a[href=?]", city_leaderboard_path(cities(:spb))
   end
+
+  test "shows only published achievements from the visited city" do
+    player = players(:daenerys)
+    create_award(
+      player: player,
+      achievement_key: "conqueror",
+      stat_value: 3,
+      published_at: Time.zone.parse("2026-07-10 12:00")
+    )
+    create_award(
+      player: player,
+      achievement_key: "faceless_chosen",
+      stat_value: 8,
+      published_at: nil
+    )
+    create_award(
+      player: player,
+      city: cities(:spb),
+      achievement_key: "dragon_slayer",
+      stat_value: 99,
+      published_at: Time.zone.parse("2026-07-10 12:00")
+    )
+
+    get city_player_url(cities(:moscow), player)
+
+    assert_response :success
+    assert_select "[data-testid=player-achievements]"
+    assert_select "[data-achievement-key=conqueror]", count: 1
+    assert_select "[data-achievement-key=faceless_chosen]", count: 0
+    assert_select "[data-achievement-key=dragon_slayer]", count: 0
+    assert_no_match "Избранник Безликих", response.body
+  end
+
+  test "shows multiple achievement snapshots with format descriptions and values" do
+    player = players(:daenerys)
+    published_at = Time.zone.parse("2026-07-10 12:00")
+    create_award(player: player, achievement_key: "conqueror", stat_value: 3, published_at: published_at)
+    create_award(player: player, achievement_key: "dragon_slayer", stat_value: 5, published_at: published_at)
+    create_award(player: player, achievement_key: "faceless_chosen", stat_value: 7, published_at: published_at)
+
+    get city_player_url(cities(:moscow), player)
+
+    assert_select "[data-achievement-key=conqueror]", text: /Завоеватель.*результат: 3/m
+    assert_select "[data-achievement-key=dragon_slayer]", text: /Драконоборец.*результат: 5/m
+    assert_select "[data-achievement-key=faceless_chosen]", text: /Избранник Безликих.*результат: 7/m
+    assert_select "[data-achievement-key=conqueror] img[src*='achievements/conqueror']", count: 1
+    assert_select "[data-achievement-key=dragon_slayer] img[src*='achievements/dragon_slayer']", count: 1
+    assert_select "[data-achievement-key=faceless_chosen] img[src*='achievements/faceless_chosen']", count: 1
+    assert_match "Мать драконов (8 игроков)", response.body
+    assert_match "Больше всего захваченных чужих столиц", response.body
+  end
+
+  test "shows an achievement to every joint winner" do
+    published_at = Time.zone.parse("2026-07-10 12:00")
+    create_award(player: players(:daenerys), achievement_key: "conqueror", stat_value: 4, published_at: published_at)
+    create_award(player: players(:jon), achievement_key: "conqueror", stat_value: 4, published_at: published_at)
+
+    get city_player_url(cities(:moscow), players(:daenerys))
+    assert_select "[data-achievement-key=conqueror]", count: 1
+
+    get city_player_url(cities(:moscow), players(:jon))
+    assert_select "[data-achievement-key=conqueror]", count: 1
+  end
+
+  private
+
+  def create_award(player:, achievement_key:, stat_value:, published_at:, city: cities(:moscow))
+    AchievementAward.create!(
+      city: city,
+      player: player,
+      game_format: "mother_of_dragons",
+      achievement_key: achievement_key,
+      stat_value: stat_value,
+      awarded_at: Time.zone.parse("2026-07-10 12:00"),
+      published_at: published_at,
+      awarded_by: admin_users(:admin)
+    )
+  end
 end

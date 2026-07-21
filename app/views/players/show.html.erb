@@ -30,6 +30,29 @@
       </div>
     </div>
 
+    <% if @achievement_awards.any? %>
+      <section class="player-achievements" data-testid="player-achievements">
+        <h2 class="player-section-title"><span class="icon-crown"></span> Достижения</h2>
+        <div class="player-achievement-grid">
+          <% @achievement_awards.each do |award| %>
+            <% definition = award.definition %>
+            <article class="player-achievement-card" data-achievement-key="<%= award.achievement_key %>">
+              <div class="player-achievement-icon" aria-hidden="true">
+                <%= image_tag definition.icon_path, alt: "" %>
+              </div>
+              <div class="player-achievement-content">
+                <h3 class="player-achievement-name"><%= definition.name %></h3>
+                <p class="player-achievement-description"><%= definition.description %></p>
+                <p class="player-achievement-meta">
+                  <%= award.game_format_definition.label %> · результат: <strong><%= award.stat_value %></strong>
+                </p>
+              </div>
+            </article>
+          <% end %>
+        </div>
+      </section>
+    <% end %>
+
     <%# ── Stats Summary ── %>
     <% if @results.any? %>
       <div class="player-summary-grid">

@@ -540,6 +540,36 @@ body.pixel-realm::after {
   color: var(--ink);
   line-height: 1.4;
 }
+.player-name-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.player-achievement-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  padding: 1px;
+  border: 1px solid var(--gold-dim);
+  background: rgba(232, 184, 48, 0.12);
+  box-shadow: 1px 1px 0 var(--pixel-shadow);
+  cursor: help;
+}
+.player-achievement-badge:focus-visible {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: 2px;
+}
+.player-achievement-badge img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
 .player-nick {
   font-family: var(--font-pixel);
   font-size: 8px;
@@ -948,6 +978,10 @@ body.pixel-realm::after {
   .player-name {
     font-size: 8px;
   }
+  .player-achievement-badge {
+    width: 22px;
+    height: 22px;
+  }
   .player-nick {
     font-size: 7px;
   }
@@ -1320,6 +1354,69 @@ body.pixel-realm::after {
   margin-bottom: 1rem;
   padding-bottom: 0.5rem;
   border-bottom: 2px solid var(--gold-dim);
+}
+
+.player-achievements {
+  margin-bottom: 2rem;
+}
+
+.player-achievement-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.player-achievement-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px;
+  background: var(--parchment-dark);
+  border: 2px solid var(--gold-dim);
+  box-shadow: 3px 3px 0 var(--pixel-shadow);
+}
+
+.player-achievement-icon {
+  flex: 0 0 auto;
+  width: 56px;
+  height: 56px;
+  filter: drop-shadow(2px 2px 0 var(--pixel-shadow));
+}
+
+.player-achievement-icon img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.player-achievement-content {
+  min-width: 0;
+}
+
+.player-achievement-name {
+  font-family: var(--font-pixel);
+  font-size: 9px;
+  line-height: 1.5;
+  color: var(--gold-bright);
+}
+
+.player-achievement-description {
+  margin-top: 6px;
+  color: var(--ink);
+  line-height: 1.25;
+}
+
+.player-achievement-meta {
+  margin-top: 8px;
+  color: var(--ink-dim);
+  font-size: 16px;
+  line-height: 1.2;
+}
+
+.player-achievement-meta strong {
+  color: var(--gold);
 }
 
 /* ═══════════════════════════════════════════

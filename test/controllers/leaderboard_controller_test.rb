@@ -66,6 +66,38 @@ class LeaderboardControllerTest < ActionDispatch::IntegrationTest
     assert_select "[data-testid=city-switcher] a[href=?]", city_leaderboard_path(cities(:spb))
   end
 
+  test "shows published city achievement icons next to a player nickname" do
+    player = players(:daenerys)
+    published_at = Time.zone.parse("2026-07-10 12:00")
+    create_award(player: player, achievement_key: "conqueror", stat_value: 4, published_at: published_at)
+    create_award(player: player, achievement_key: "faceless_chosen", stat_value: 7, published_at: published_at)
+
+    get city_leaderboard_url(cities(:moscow))
+
+    assert_response :success
+    assert_select ".player-achievement-badge[data-achievement-key=conqueror] img[src*='achievements/conqueror']", count: 1
+    assert_select ".player-achievement-badge[data-achievement-key=faceless_chosen] img[src*='achievements/faceless_chosen']", count: 1
+    assert_select ".player-achievement-badge[title*='Завоеватель'][title*='Больше всего захваченных чужих столиц']", count: 1
+  end
+
+  test "hides unpublished and other city achievement icons" do
+    player = players(:daenerys)
+    create_award(player: player, achievement_key: "faceless_chosen", stat_value: 7, published_at: nil)
+    create_award(
+      player: player,
+      city: cities(:spb),
+      achievement_key: "dragon_slayer",
+      stat_value: 9,
+      published_at: Time.zone.parse("2026-07-10 12:00")
+    )
+
+    get city_leaderboard_url(cities(:moscow))
+
+    assert_response :success
+    assert_select ".player-achievement-badge", count: 0
+    assert_no_match "Избранник Безликих", response.body
+  end
+
   test "redirects to the city selector for an unknown city" do
     get city_leaderboard_url("nonexistent-city")
 
@@ -79,5 +111,20 @@ class LeaderboardControllerTest < ActionDispatch::IntegrationTest
     get city_leaderboard_url(cities(:moscow))
 
     assert_select "[data-testid=city-switcher]", count: 0
+  end
+
+  private
+
+  def create_award(player:, achievement_key:, stat_value:, published_at:, city: cities(:moscow))
+    AchievementAward.create!(
+      city: city,
+      player: player,
+      game_format: "mother_of_dragons",
+      achievement_key: achievement_key,
+      stat_value: stat_value,
+      awarded_at: Time.zone.parse("2026-07-10 12:00"),
+      published_at: published_at,
+      awarded_by: admin_users(:admin)
+    )
   end
 end

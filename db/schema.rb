@@ -10,9 +10,27 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_02_130100) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_21_190000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "achievement_awards", force: :cascade do |t|
+    t.string "achievement_key", null: false
+    t.datetime "awarded_at", null: false
+    t.bigint "awarded_by_id"
+    t.bigint "city_id", null: false
+    t.datetime "created_at", null: false
+    t.string "game_format", null: false
+    t.bigint "player_id", null: false
+    t.datetime "published_at"
+    t.integer "stat_value", null: false
+    t.datetime "updated_at", null: false
+    t.index ["awarded_by_id"], name: "index_achievement_awards_on_awarded_by_id"
+    t.index ["city_id", "game_format", "achievement_key", "player_id"], name: "index_achievement_awards_tournament_winner_unique", unique: true
+    t.index ["city_id"], name: "index_achievement_awards_on_city_id"
+    t.index ["player_id"], name: "index_achievement_awards_on_player_id"
+    t.check_constraint "stat_value >= 0", name: "achievement_awards_stat_value_nonnegative"
+  end
 
   create_table "active_storage_attachments", force: :cascade do |t|
     t.bigint "blob_id", null: false
@@ -149,6 +167,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_02_130100) do
     t.index ["city_id"], name: "index_tours_on_city_id"
   end
 
+  add_foreign_key "achievement_awards", "admin_users", column: "awarded_by_id", on_delete: :nullify
+  add_foreign_key "achievement_awards", "cities"
+  add_foreign_key "achievement_awards", "players"
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "admin_user_cities", "admin_users"

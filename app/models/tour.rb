@@ -48,6 +48,8 @@ class Tour < ApplicationRecord
     return nil if starts_on.blank? && ends_on.blank?
 
     if starts_on.present? && ends_on.present?
+      return starts_on.strftime("%d.%m") if starts_on == ends_on
+
       "#{starts_on.strftime('%d.%m')} – #{ends_on.strftime('%d.%m')}"
     elsif starts_on.present?
       starts_on.strftime("%d.%m")

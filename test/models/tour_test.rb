@@ -49,6 +49,24 @@ class TourTest < ActiveSupport::TestCase
     assert_not mod.valid?
   end
 
+  test "date range label shows a single date when the dates match" do
+    tour = Tour.new(
+      starts_on: Date.new(2026, 9, 13),
+      ends_on: Date.new(2026, 9, 13)
+    )
+
+    assert_equal "13.09", tour.date_range_label
+  end
+
+  test "date range label shows both dates when they differ" do
+    tour = Tour.new(
+      starts_on: Date.new(2026, 9, 13),
+      ends_on: Date.new(2026, 9, 14)
+    )
+
+    assert_equal "13.09 – 14.09", tour.date_range_label
+  end
+
   test "tables_count is bounded by the available table letters" do
     tour = Tour.new(number: 5, city: cities(:moscow))
     tour.tables_count = 0

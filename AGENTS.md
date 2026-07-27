@@ -4,19 +4,22 @@
 - Rails 8.1 application for the League of Thrones tournament site and admin panel.
 - Stack: Ruby 3.3.6, PostgreSQL, Importmap, Turbo, Stimulus, Tailwind CSS, Minitest.
 - Public surface is **scoped by city** (URL prefix `/:city`): leaderboard, player profile pages, rules page. Plus a **global** gallery login/page.
-- Admin surface: city management, player management (incl. city membership), tour management (incl. format), game result editing, editable site pages.
+- Admin surface: city/admin management, player management (incl. city membership), tour management (incl. format and dates), game result editing, tournament statistics, achievement publication, editable site pages.
 
 ## Key Domain Objects
 - `City`: a tournament location, addressed by `slug` (`to_param`). Has many tours, site pages, player_cities; has many players through player_cities. Holds `default_format`. Auto-creates its "rules" page on create.
 - `PlayerCity`: join between players and cities (city roster). Holds `previous_rank` (per-city, for rank deltas).
-- `Player`: tournament participant (photo, nickname). Belongs to many cities through player_cities; appears only on the leaderboards of cities it is linked to.
-- `Tour`: tournament round. Belongs to a city. Has a `format` and `tables_count` (1–4); `number` unique within a city, bounded by the format's tour count. `Tour#sync_tables` reconciles its games (tables) to `tables_count`.
+- `Player`: tournament participant (photo, nickname). Belongs to many cities through player_cities; appears only on the leaderboards of cities it is linked to and only while `participates_in_tournament` is enabled.
+- `Tour`: tournament round. Belongs to a city. Has a `format`, `tables_count` (1–4), `played_on`, `starts_on` and `ends_on`; `number` unique within a city, bounded by the format's tour count. `Tour#sync_tables` reconciles its games (tables) to `tables_count`; `date_range_label` renders equal start/end dates once.
 - `Game`: table inside a tour. `Game::TABLE_LETTERS = A..D` (cap on tables_count).
 - `AdminUser`: has `superadmin` flag and `cities` (through `admin_user_cities`). Superadmin = full access; regular admin = scoped to assigned cities. `accessible_cities`, `can_access_city?`.
 - `GameResult`: one player's result at one table — house, place, bonus stats, points. Capital scoring splits into `capital_captures` + `capital_controls`, with legacy fallback to `capitals` when both split fields are `NULL`.
 - `GameFormat` (plain Ruby, not a model): registry of formats (`mother_of_dragons` = 8/table, `classic` = 6/table). **Single source of truth for scoring** — place points, table-A bonus, capital cap, and a data-driven `castle_rule`. `#to_config_json` is the contract consumed by the JS points calculator.
 - `SitePage`: editable static content (e.g. rules), belongs to a city; `slug` unique per city.
 - `RankingCalculator`: recomputes a **single city's** leaderboard and league placement from that city's played tours.
+- `TournamentStatisticsCalculator`: aggregates every result from played tours for one city and format, validates publication completeness, and calculates achievement nominations.
+- `AchievementDefinition`: registry of format-aware achievement definitions (`conqueror`, `dragon_slayer`, `faceless_chosen`).
+- `AchievementAward`: persisted achievement snapshot scoped by city, game format, achievement and player; only rows with `published_at` are public.
 
 ## Repo Map
 - `app/controllers`
@@ -27,6 +30,8 @@
   Core tournament rules and validations. `game_format.rb` holds all scoring rules.
 - `app/services/ranking_calculator.rb`
   Rebuilds a city's rankings after result changes (`call(city)` / `recalculate!(city)`).
+- `app/services/tournament_statistics_calculator.rb`
+  Builds sortable tournament statistics, completeness problems and achievement nominations for a city/format.
 - `app/views/admin`
   Admin UI templates. `app/views/shared/_city_switcher.html.erb` is the public city switcher.
 - `app/javascript/controllers`
@@ -45,7 +50,7 @@
 - City leaderboard: `/:city` (e.g. `/moscow`); filter a tour with `?tour=N`.
 - City rules: `/:city/rules`; player profile: `/:city/players/:id`.
 - Gallery (global): `/gallery`, login `/gallery/login`.
-- Admin login: `/admin/login`; admin home: `/admin`.
+- Admin login: `/admin/login`; admin home: `/admin`; tournament statistics: `/admin/statistics`.
 
 ## Local Run
 1. Ensure PostgreSQL is available locally.
@@ -59,6 +64,7 @@ Useful seeded review pages after `bin/rails db:seed:replant` (all under the defa
 - Tour 1, table A: mixed legacy/split capital cases for public ranking checks
 - Tour 4, table A: admin editor corner cases for empty/partial split capital input
 - Tour 4, table B: draft rows and manual points override cases
+- Achievement awards are intentionally unpublished; statistics publication is intentionally blocked until the blank skull value in tour 1, table A is filled
 
 Seeded admin credentials:
 - login: `admin`
@@ -116,20 +122,32 @@ Seeded admin credentials:
 - `app/services/ranking_calculator.rb`
 - Tests: `test/controllers/{leaderboard,players}_controller_test.rb`, `test/services/ranking_calculator_test.rb`
 
+### Tournament statistics & achievements
+- Registry/models: `app/models/{achievement_definition,achievement_award}.rb`
+- Calculator: `app/services/tournament_statistics_calculator.rb`
+- Admin read/sort UI: `app/controllers/admin/statistics_controller.rb`, `app/views/admin/statistics/show.html.erb`
+- Publish/refresh/unpublish flow: `app/controllers/admin/achievement_publications_controller.rb`
+- Public badges/cards: `app/controllers/{leaderboard,players}_controller.rb`, `app/views/{leaderboard,players}`
+- Tests: `test/services/tournament_statistics_calculator_test.rb`, `test/controllers/admin/statistics_controller_test.rb`, `test/models/achievement_award_test.rb`
+
 ## Important Domain Rules
-- A player cannot appear twice at the same table, nor at two tables in the same tour.
+- A player cannot appear twice at the same table, but may play at multiple tables in the same tour. Each result counts as a separate game in rankings and tournament statistics.
 - Houses are unique within one game; a player cannot reuse the same house across games. Houses available per format come from `GameFormat#house_options`.
-- A player appears on a city's leaderboard only if linked via `player_cities`. Tour `number` is unique per city; `SitePage` `slug` is unique per city.
+- A player appears on a city's leaderboard only if linked via `player_cities` and `participates_in_tournament` is not false. Tour `number` is unique per city; `SitePage` `slug` is unique per city.
 - In the admin editor, a row is valid only if both `player` and `house` are filled, or both are blank. The editor renders `format.players_per_table` slots.
 - `capitals` is legacy-only input. Effective capital scoring uses `capital_captures + capital_controls` when at least one split field is present; otherwise legacy `capitals`. Capital bonus is capped at the format's `capital_cap` (3); ranking tie-break does not use `effective_capitals`.
 - Ranking tie-break order: `best6_points`, `wins`, ranking `captures`, `dragons`, `lands`.
 - Ranking `captures` use legacy `capitals` only when both split fields are `NULL`; otherwise only `capital_captures` (never `capital_controls`).
 - League tiers (gold/silver/bronze/iron) are sized by the city's `default_game_format.league_tier_size`. `previous_rank` is stored per-city on `player_cities`, so rank deltas never mix across cities.
 - Keep public player profile wording/data consistent with the leaderboard; show `ranking_captures` in the captures column and castles in the rightmost castle-icon column; results are scoped to the visited city's tours.
-- `skulls` are stored but do not affect ranking. `place` may be `NULL` for draft assignments.
+- `skulls` feed format-specific statistics/achievements but do not affect ranking. `place` may be `NULL` for draft assignments.
 - Ranking is recalculated (for the tour's city) after saving game results.
-- A tour's `tables_count` (1–4) controls how many tables (games A–N) it has; reducing it only removes empty tables. Players-per-table comes from the format, independent of tables_count.
+- A tour's `tables_count` (1–4) controls how many tables (games A–D) it has; reducing it only removes empty tables. Players-per-table comes from the format, independent of tables_count.
+- Tour schedule labels use `starts_on`/`ends_on`: one present date is shown alone, equal dates are shown once, and different dates are shown as a range. `ends_on` cannot precede `starts_on`.
 - Changing a tour's `format` does NOT recompute already-saved `points`; the leaderboard sums stored points. Cities can run different formats (e.g. 8-player Moscow, 6-player new city).
+- Tournament statistics are scoped by city and game format and aggregate all results from played tours (no best-six limit). Sorting is available only for metrics tracked by that format.
+- Achievement publication requires complete configured tables: expected player count, required fields and a unique full place range. Unexpected result-bearing tables are reported as problems; tied nomination leaders are all published.
+- Public leaderboard/profile pages show only published achievements from the visited city. Refreshing publication replaces the current published snapshot; unpublishing keeps historical award rows but clears `published_at`.
 - Regular admins act only within their assigned cities. Players are global: a regular admin sees players in their cities, edits keep a player's links to other cities, and only superadmins delete players.
 
 ## Working Conventions For Agents
@@ -137,6 +155,8 @@ Seeded admin credentials:
 - Prefer `rg` for search and `bin/rails test path/to/test.rb` for targeted validation.
 - Do not edit `db/schema.rb` manually; generate migrations.
 - Change scoring rules only in `app/models/game_format.rb`, then mirror in `points_calculator_controller.js` — never duplicate the math elsewhere.
+- Change achievement names, applicability, metrics and icons in `app/models/achievement_definition.rb`; keep statistics, publication and public rendering tests aligned.
+- When changing statistics completeness or aggregation, cover both `TournamentStatisticsCalculator` and the admin publication controller. Preserve the distinction between leaderboard best-six scoring and all-game statistics.
 - When changing admin result behavior, update all of: view, both Stimulus controllers, server-side validations / save flow, and relevant controller/model tests. The save flow recreates rows with `delete_all + insert_all`; preserve hidden round-trip fields.
 - The project uses fixtures, not factories. Records created inline in tests must satisfy multi-city constraints: tours/pages need a `city:`; players need a `PlayerCity` link to appear on a city's leaderboard (`test/fixtures/cities.yml`, `player_cities.yml`, `site_pages.yml`). Admin fixtures: `admin` is `superadmin: true`, `city_admin` is a regular admin scoped to Moscow via `admin_user_cities.yml`.
 - Seeds are a realistic local scenario; avoid breaking `bin/rails db:seed:replant`.

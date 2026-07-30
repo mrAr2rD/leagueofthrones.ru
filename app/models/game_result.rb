@@ -166,10 +166,13 @@ class GameResult < ApplicationRecord
     duplicate_in_current_game = sibling_results.any? do |result|
       result.player_id == player_id && result.house == house
     end
-    duplicate_in_other_games = GameResult.where(player_id: player_id, house: house)
-                                         .where.not(game_id: game_id)
-                                         .where.not(id: id)
-                                         .exists?
+    duplicate_results = GameResult.where(player_id: player_id, house: house)
+                                  .where.not(game_id: game_id)
+                                  .where.not(id: id)
+    if game&.tour&.allows_house_reuse?
+      duplicate_results = duplicate_results.joins(:game).where(games: { tour_id: game.tour_id })
+    end
+    duplicate_in_other_games = duplicate_results.exists?
     return unless duplicate_in_current_game || duplicate_in_other_games
 
     errors.add(:house, "уже использовался этим игроком")

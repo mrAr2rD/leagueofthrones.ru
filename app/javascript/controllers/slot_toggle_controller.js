@@ -16,7 +16,9 @@ export default class extends Controller {
     allPlayerOptions: Array,
     playerTourTableWarnings: Object,
     allHouseOptions: Array,
-    playerHouseOptions: Object
+    playerHouseOptions: Object,
+    houseReuseAllowed: Boolean,
+    playerHistoricalHouses: Object
   }
 
   connect() {
@@ -63,6 +65,7 @@ export default class extends Controller {
       })
 
       if (houseHint) {
+        this.setHouseHintAppearance(houseHint, false)
         houseHint.textContent = "Сначала выберите игрока"
       }
 
@@ -77,7 +80,7 @@ export default class extends Controller {
         .filter(Boolean)
     )
 
-    let availableOptions = playerOptions.filter(([, houseKey]) => !takenHouses.has(houseKey) || houseKey === selectedHouse)
+    const availableOptions = playerOptions.filter(([, houseKey]) => !takenHouses.has(houseKey) || houseKey === selectedHouse)
 
     if (availableOptions.length === 0) {
       this.populateHouseSelect(houseSelect, [], "", {
@@ -86,6 +89,7 @@ export default class extends Controller {
       })
 
       if (houseHint) {
+        this.setHouseHintAppearance(houseHint, false)
         houseHint.textContent = "У этого игрока не осталось свободных домов"
       }
 
@@ -93,15 +97,41 @@ export default class extends Controller {
     }
 
     const nextValue = availableOptions.some(([, houseKey]) => houseKey === selectedHouse) ? selectedHouse : ""
+    const historicalHouses = new Set(this.playerHistoricalHousesValue[playerSelect.value] || [])
+    const displayOptions = availableOptions.map(([label, houseKey]) => [
+      this.houseReuseAllowedValue && historicalHouses.has(houseKey) ? `${label} — уже играл` : label,
+      houseKey
+    ])
 
-    this.populateHouseSelect(houseSelect, availableOptions, nextValue, {
+    this.populateHouseSelect(houseSelect, displayOptions, nextValue, {
       includeBlank: true,
       disabled: false
     })
 
     if (houseHint) {
+      this.renderHouseHint(houseHint, historicalHouses, nextValue, availableOptions)
+    }
+  }
+
+  renderHouseHint(houseHint, historicalHouses, selectedHouse, availableOptions) {
+    const repeatedHouse = this.houseReuseAllowedValue && selectedHouse !== "" && historicalHouses.has(selectedHouse)
+
+    this.setHouseHintAppearance(houseHint, repeatedHouse)
+
+    if (repeatedHouse) {
+      const houseLabel = this.allHouseOptionsValue.find(([, houseKey]) => houseKey === selectedHouse)?.[0] || selectedHouse
+      houseHint.textContent = `Внимание: игрок уже играл за дом «${houseLabel}». В заключительном туре повтор разрешён.`
+    } else if (this.houseReuseAllowedValue) {
+      houseHint.textContent = "Заключительный тур: можно повторить дом; ранее использованные дома отмечены «уже играл»."
+    } else {
       houseHint.textContent = `Можно выбрать: ${availableOptions.map(([label]) => label).join(", ")}`
     }
+  }
+
+  setHouseHintAppearance(houseHint, warning) {
+    houseHint.classList.toggle("font-medium", warning)
+    houseHint.classList.toggle("text-amber-700", warning)
+    houseHint.classList.toggle("text-gray-500", !warning)
   }
 
   syncPlayerSelect(playerSelect) {

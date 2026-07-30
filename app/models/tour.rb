@@ -40,6 +40,14 @@ class Tour < ApplicationRecord
     GameFormat.find(self[:format])
   end
 
+  def final_tour?
+    number == game_format.tour_default_count
+  end
+
+  def allows_house_reuse?
+    game_format.key == GameFormat::DEFAULT_KEY && final_tour?
+  end
+
   def display_name
     "Тур #{number}"
   end

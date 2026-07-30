@@ -42,7 +42,10 @@ module Admin
       @player_options_by_selected = build_player_options_by_selected
       @player_tour_table_warnings = build_player_tour_table_warnings
       @house_options = GameResult.house_options(format: @tour.game_format)
-      @player_house_options = build_player_house_options
+      house_history = load_house_history
+      @house_reuse_allowed = @tour.allows_house_reuse?
+      @player_historical_houses = build_player_historical_houses(house_history)
+      @player_house_options = build_player_house_options(house_history)
     end
 
     def ensure_result_slots
@@ -50,19 +53,32 @@ module Admin
       (@tour.game_format.players_per_table - existing).times { @game.game_results.build }
     end
 
-    def build_player_house_options
-      historical_houses = GameResult.where(player_id: @players.map(&:id))
-                                    .where.not(game_id: @game.id)
-                                    .where.not(house: nil)
-                                    .pluck(:player_id, :house)
+    def load_house_history
+      GameResult.joins(game: :tour)
+                .where(player_id: @players.map(&:id))
+                .where.not(game_id: @game.id)
+                .where.not(house: nil)
+                .pluck(:player_id, :house, "tours.id")
+    end
 
-      used_houses_by_player = historical_houses.each_with_object(Hash.new { |hash, key| hash[key] = [] }) do |(player_id, house), hash|
+    def build_player_historical_houses(house_history)
+      house_history.each_with_object(Hash.new { |hash, key| hash[key] = [] }) do |(player_id, house, tour_id), hash|
+        next if tour_id == @tour.id
+
+        hash[player_id.to_s] |= [ house ]
+      end
+    end
+
+    def build_player_house_options(house_history)
+      blocked_houses_by_player = house_history.each_with_object(Hash.new { |hash, key| hash[key] = [] }) do |(player_id, house, tour_id), hash|
+        next if @tour.allows_house_reuse? && tour_id != @tour.id
+
         hash[player_id] << house
       end
 
       @players.each_with_object({}) do |player, options|
         options[player.id.to_s] = GameResult.house_options_for(
-          used_houses: used_houses_by_player[player.id],
+          used_houses: blocked_houses_by_player[player.id],
           format: @tour.game_format
         )
       end

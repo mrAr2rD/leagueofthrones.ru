@@ -164,6 +164,58 @@ class GameResultTest < ActiveSupport::TestCase
     assert_includes gr.errors[:house], "уже использовался этим игроком"
   end
 
+  test "player can reuse a house from an earlier tour in the final tour" do
+    final_tour = cities(:moscow).tours.create!(number: 8, format: "mother_of_dragons")
+    final_game = final_tour.games.create!(table_letter: "A")
+    result = GameResult.new(
+      game: final_game,
+      player: players(:daenerys),
+      house: "stark",
+      place: 2,
+      points: 12
+    )
+
+    assert result.valid?, result.errors.full_messages.to_sentence
+  end
+
+  test "player cannot reuse the same house at another table of the final tour" do
+    final_tour = cities(:moscow).tours.create!(number: 8, format: "mother_of_dragons")
+    first_game = final_tour.games.create!(table_letter: "A")
+    second_game = final_tour.games.create!(table_letter: "B")
+    GameResult.create!(
+      game: first_game,
+      player: players(:daenerys),
+      house: "lannister",
+      place: 1,
+      points: 12
+    )
+    result = GameResult.new(
+      game: second_game,
+      player: players(:daenerys),
+      house: "lannister",
+      place: 2,
+      points: 7
+    )
+
+    assert_not result.valid?
+    assert_includes result.errors[:house], "уже использовался этим игроком"
+  end
+
+  test "classic final tour keeps the strict house reuse rule" do
+    classic_tour = cities(:spb).tours.create!(number: 6, format: "classic")
+    classic_game = classic_tour.games.create!(table_letter: "A")
+    result = GameResult.new(
+      game: classic_game,
+      player: players(:daenerys),
+      house: "stark",
+      place: 2,
+      points: 8
+    )
+
+    assert_not result.valid?
+    assert_includes result.errors[:house], "уже использовался этим игроком"
+  end
+
   test "house_name returns russian label" do
     assert_equal "Старк", game_results(:daenerys_game1).house_name
   end

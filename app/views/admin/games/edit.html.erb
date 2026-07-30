@@ -15,7 +15,9 @@
       slot_toggle_all_player_options_value: @player_options.to_json,
       slot_toggle_player_tour_table_warnings_value: @player_tour_table_warnings.to_json,
       slot_toggle_all_house_options_value: @house_options.to_json,
-      slot_toggle_player_house_options_value: @player_house_options.to_json
+      slot_toggle_player_house_options_value: @player_house_options.to_json,
+      slot_toggle_house_reuse_allowed_value: @house_reuse_allowed,
+      slot_toggle_player_historical_houses_value: @player_historical_houses.to_json
     } do |f| %>
   <%# Классика скрывает «Черепки» и «Драконы» → в lg-сетке 7 столбцов вместо 9.
       Tailwind не понимает arbitrary-значения с интерполяцией, поэтому оба класса — литералы. %>
@@ -48,8 +50,21 @@
         <% warning_tables = @player_tour_table_warnings.fetch(gr.player_id.to_s, []) %>
         <% player_warning = warning_tables.any? ? "Уже играет в этом туре: #{warning_tables.map { |table_letter| "стол #{table_letter}" }.join(', ')}" : "" %>
         <% row_house_options = gr.player_id.present? ? @player_house_options.fetch(gr.player_id.to_s, @house_options) : @house_options %>
+        <% historical_houses = @player_historical_houses.fetch(gr.player_id.to_s, []) %>
+        <% display_house_options = row_house_options.map do |label, house|
+             historical_houses.include?(house) ? ["#{label} — уже играл", house] : [label, house]
+           end %>
+        <% repeated_house = gr.house.present? && historical_houses.include?(gr.house) %>
         <% house_hint = if gr.player_id.present?
-             row_house_options.any? ? "Можно выбрать: #{row_house_options.map(&:first).join(', ')}" : "У этого игрока не осталось свободных домов"
+             if repeated_house
+               "Внимание: игрок уже играл за дом «#{GameResult::HOUSE_LABELS.fetch(gr.house)}». В заключительном туре повтор разрешён."
+             elsif @house_reuse_allowed
+               "Заключительный тур: можно повторить дом; ранее использованные дома отмечены «уже играл»."
+             elsif row_house_options.any?
+               "Можно выбрать: #{row_house_options.map(&:first).join(', ')}"
+             else
+               "У этого игрока не осталось свободных домов"
+             end
            else
              "Сначала выберите игрока"
            end %>
@@ -91,12 +106,14 @@
             <div class="col-span-2 min-w-0 lg:col-span-1">
               <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500 lg:hidden">Дом</label>
               <%= grf.select :house,
-                  options_for_select(row_house_options, gr.house),
+                  options_for_select(display_house_options, gr.house),
                   { include_blank: "— дом —" },
                   class: "h-12 w-full min-w-0 rounded border border-gray-300 px-3 text-sm leading-5 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400",
                   disabled: gr.player_id.blank?,
                   data: { action: "change->slot-toggle#refresh", slot_toggle_target: "houseSelect" } %>
-              <p class="mt-1 min-h-[3.75rem] text-xs text-gray-500" data-slot-toggle-target="houseHint"><%= house_hint %></p>
+              <p class="mt-1 min-h-[3.75rem] text-xs <%= repeated_house ? 'font-medium text-amber-700' : 'text-gray-500' %>"
+                 aria-live="polite"
+                 data-slot-toggle-target="houseHint"><%= house_hint %></p>
             </div>
 
             <div class="min-w-0">

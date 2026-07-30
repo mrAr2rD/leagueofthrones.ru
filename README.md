@@ -189,7 +189,11 @@ Relevant tests:
 - A player can appear only once per table, but may play at multiple tables in the
   same tour. Each result counts as a separate game.
 - Houses must be unique within a game.
-- A player cannot reuse the same house across games.
+- A player cannot reuse the same house across games before the concluding tour.
+  In Mother of Dragons' concluding eighth tour, a house from an earlier tour may
+  be reused. The admin editor marks such options as `уже играл` and shows an
+  explicit warning after selection. Reusing the same house at another table of
+  the eighth tour remains forbidden. Classic retains the strict no-reuse rule.
 - `Tour#tables_count` controls tables `A` through `D`; reducing the count removes
   only empty tables. `GameFormat` independently controls players per table.
 - Tour schedule badges use `starts_on` and `ends_on`. Equal dates render as one

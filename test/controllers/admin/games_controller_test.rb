@@ -46,6 +46,43 @@ module Admin
       assert_equal "targaryen", result.reload.house
     end
 
+    test "allows a house from an earlier tour in the final tour" do
+      final_tour = cities(:moscow).tours.create!(number: 8, format: "mother_of_dragons")
+      final_game = final_tour.games.create!(table_letter: "A")
+
+      patch_game(final_game,
+        submitted_result_attributes(
+          nil,
+          player_id: players(:daenerys).id,
+          house: "stark"
+        ))
+
+      assert_redirected_to admin_tour_url(final_tour)
+      assert_equal "stark", final_game.reload.game_results.find_by!(player: players(:daenerys)).house
+    end
+
+    test "marks houses used in earlier tours and renders an explicit warning" do
+      final_tour = cities(:moscow).tours.create!(number: 8, format: "mother_of_dragons")
+      final_game = final_tour.games.create!(table_letter: "A")
+      GameResult.create!(
+        game: final_game,
+        player: players(:daenerys),
+        house: "stark",
+        place: 2,
+        points: 7
+      )
+
+      get edit_admin_tour_game_url(final_tour, final_game)
+
+      assert_response :success
+      assert_select "form[data-slot-toggle-house-reuse-allowed-value='true']"
+      assert_select "select[data-slot-toggle-target='houseSelect'] option[value='stark']",
+                    text: "Старк — уже играл",
+                    count: 1
+      assert_includes response.body, "игрок уже играл за дом «Старк»"
+      assert_includes response.body, "В заключительном туре повтор разрешён"
+    end
+
     test "allows swapping houses within one game" do
       game = games(:game_1a)
       first_result = game_results(:daenerys_game1)
@@ -292,7 +329,7 @@ module Admin
     private
 
     def patch_game(game, *rows)
-      patch admin_tour_game_url(tours(:tour_one), game), params: {
+      patch admin_tour_game_url(game.tour, game), params: {
         game: {
           game_results_attributes: rows.each_with_index.to_h do |row, index|
             [ index.to_s, row ]

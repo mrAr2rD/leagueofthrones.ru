@@ -49,6 +49,18 @@ class TourTest < ActiveSupport::TestCase
     assert_not mod.valid?
   end
 
+  test "final tour follows the selected format tour count" do
+    assert Tour.new(number: 8, format: "mother_of_dragons").final_tour?
+    assert Tour.new(number: 6, format: "classic").final_tour?
+    assert_not Tour.new(number: 7, format: "mother_of_dragons").final_tour?
+  end
+
+  test "house reuse is allowed only in the final mother of dragons tour" do
+    assert Tour.new(number: 8, format: "mother_of_dragons").allows_house_reuse?
+    assert_not Tour.new(number: 7, format: "mother_of_dragons").allows_house_reuse?
+    assert_not Tour.new(number: 6, format: "classic").allows_house_reuse?
+  end
+
   test "date range label shows a single date when the dates match" do
     tour = Tour.new(
       starts_on: Date.new(2026, 9, 13),

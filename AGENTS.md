@@ -132,7 +132,7 @@ Seeded admin credentials:
 
 ## Important Domain Rules
 - A player cannot appear twice at the same table, but may play at multiple tables in the same tour. Each result counts as a separate game in rankings and tournament statistics.
-- Houses are unique within one game; a player cannot reuse the same house across games. Houses available per format come from `GameFormat#house_options`.
+- Houses are unique within one game. A player cannot reuse the same house across games except in Mother of Dragons' concluding eighth tour, where a house from tours 1–7 may be reused. The same player still cannot reuse one house at another table of tour 8, and Classic keeps the strict no-reuse rule. The admin editor marks previously played houses and warns explicitly when one is selected. Houses available per format come from `GameFormat#house_options`.
 - A player appears on a city's leaderboard only if linked via `player_cities` and `participates_in_tournament` is not false. Tour `number` is unique per city; `SitePage` `slug` is unique per city.
 - In the admin editor, a row is valid only if both `player` and `house` are filled, or both are blank. The editor renders `format.players_per_table` slots.
 - `capitals` is legacy-only input. Effective capital scoring uses `capital_captures + capital_controls` when at least one split field is present; otherwise legacy `capitals`. Capital bonus is capped at the format's `capital_cap` (3); ranking tie-break does not use `effective_capitals`.

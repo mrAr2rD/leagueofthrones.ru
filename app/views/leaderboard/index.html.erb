@@ -20,6 +20,12 @@
 
   <%# ── NAV ── %>
   <nav class="flex justify-center gap-3 mb-6">
+    <%= link_to city_tides_of_battle_path(@city),
+                class: "tour-scroll tour-scroll-active",
+                style: "min-width: 120px; text-align: center; justify-content: center;",
+                data: { turbo_prefetch: false } do %>
+      Перевес
+    <% end %>
     <%= link_to city_rules_path(@city), class: "tour-scroll tour-scroll-active", style: "min-width: 120px; text-align: center; justify-content: center;" do %>
       Правила
     <% end %>

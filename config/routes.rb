@@ -38,6 +38,12 @@ Rails.application.routes.draw do
   scope "/:city_id", as: :city do
     get "/",     to: "leaderboard#index", as: :leaderboard
     get "rules", to: "pages#rules",       as: :rules
+    get "tides-of-battle", to: "tides_of_battle_sessions#new", as: :tides_of_battle
+    get "tides-of-battle/:token", to: "tides_of_battle_sessions#show", as: :tides_of_battle_session
+    post "tides-of-battle/:token/:side/draw", to: "tides_of_battle_sessions#draw", as: :tides_of_battle_draw
+    post "tides-of-battle/:token/:side/peek", to: "tides_of_battle_sessions#peek", as: :tides_of_battle_peek
+    post "tides-of-battle/:token/:side/reroll", to: "tides_of_battle_sessions#reroll", as: :tides_of_battle_reroll
+    post "tides-of-battle/:token/reveal", to: "tides_of_battle_sessions#reveal", as: :tides_of_battle_reveal
     resources :players, only: [ :show ]
   end
 end

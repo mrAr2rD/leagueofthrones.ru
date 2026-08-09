@@ -1,0 +1,55 @@
+<% content_for :title, "Карты перевеса — LEAGUE OF THRONES" %>
+<% content_for :head do %>
+  <meta name="turbo-cache-control" content="no-cache">
+<% end %>
+
+<main class="tides-page">
+  <header class="tides-header">
+    <%= link_to city_leaderboard_path(@city), class: "pixel-back-link" do %>
+      ← На главную
+    <% end %>
+    <div class="tides-heading">
+      <span class="tides-kicker"><%= @city.name %></span>
+      <h1>Карты перевеса</h1>
+    </div>
+    <span class="tides-header-spacer" aria-hidden="true"></span>
+  </header>
+
+  <%= turbo_frame_tag "battle_board" do %>
+    <% if flash[:alert].present? %>
+      <p class="tides-alert" role="alert"><%= flash[:alert] %></p>
+    <% end %>
+
+    <section class="tides-arena" data-testid="tides-arena">
+      <%= render "player_zone", side: "attacker", title: "Атакующий", number: "I" %>
+
+      <div class="tides-clash-divider">
+        <span class="tides-divider-line" aria-hidden="true"></span>
+        <% if @battle_session.revealed? %>
+          <span class="tides-battle-status">Итог боя</span>
+        <% elsif @battle_session.both_drawn? %>
+          <%= button_to "Открыть обе карты",
+                        city_tides_of_battle_reveal_path(@city, @battle_session.token),
+                        class: "tides-reveal-button",
+                        form: { data: { turbo_frame: "battle_board" } } %>
+        <% else %>
+          <span class="tides-battle-status">Обе стороны тянут карту</span>
+        <% end %>
+        <span class="tides-divider-line" aria-hidden="true"></span>
+      </div>
+
+      <%= render "player_zone", side: "defender", title: "Защищающийся", number: "II" %>
+    </section>
+
+    <footer class="tides-footer">
+      <% if @battle_session.revealed? %>
+        <%= link_to "Новый бой",
+                    city_tides_of_battle_path(@city),
+                    class: "tides-new-battle",
+                    data: { turbo_prefetch: false, turbo_frame: "_top" } %>
+      <% else %>
+        <p>Передавайте телефон по очереди. Глаз открывает только выбранную карту.</p>
+      <% end %>
+    </footer>
+  <% end %>
+</main>

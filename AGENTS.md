@@ -3,11 +3,11 @@
 ## Project Snapshot
 - Rails 8.1 application for the League of Thrones tournament site and admin panel.
 - Stack: Ruby 3.3.6, PostgreSQL, Importmap, Turbo, Stimulus, Tailwind CSS, Minitest.
-- Public surface is **scoped by city** (URL prefix `/:city`): leaderboard, player profile pages, rules page. Plus a **global** gallery login/page.
+- Public surface is **scoped by city** (URL prefix `/:city`): leaderboard, player profile pages, rules page and a mobile-first Tides of Battle pass-and-play draw. Plus a **global** gallery login/page.
 - Admin surface: city/admin management, player management (incl. city membership), tour management (incl. format and dates), game result editing, tournament statistics, achievement publication, editable site pages.
 
 ## Key Domain Objects
-- `City`: a tournament location, addressed by `slug` (`to_param`). Has many tours, site pages, player_cities; has many players through player_cities. Holds `default_format`. Auto-creates its "rules" page on create.
+- `City`: a tournament location, addressed by `slug` (`to_param`). Has many tours, site pages, player_cities and Tides of Battle sessions; has many players through player_cities. Holds `default_format`. Auto-creates its "rules" page on create.
 - `PlayerCity`: join between players and cities (city roster). Holds `previous_rank` (per-city, for rank deltas).
 - `Player`: tournament participant (photo, nickname). Belongs to many cities through player_cities; appears only on the leaderboards of cities it is linked to and only while `participates_in_tournament` is enabled.
 - `Tour`: tournament round. Belongs to a city. Has a `format`, `tables_count` (1–4), `played_on`, `starts_on` and `ends_on`; `number` unique within a city, bounded by the format's tour count. `Tour#sync_tables` reconciles its games (tables) to `tables_count`; `date_range_label` renders equal start/end dates once.
@@ -20,6 +20,7 @@
 - `TournamentStatisticsCalculator`: aggregates every result from played tours for one city and format, validates publication completeness, and calculates achievement nominations.
 - `AchievementDefinition`: registry of format-aware achievement definitions (`conqueror`, `dragon_slayer`, `faceless_chosen`).
 - `AchievementAward`: persisted achievement snapshot scoped by city, game format, achievement and player; only rows with `published_at` are public.
+- `TidesOfBattleSession`: tokenized combat session for one shared phone. Owns a shuffled 24-card deck, attacker/defender cards, the single Valyrian Steel Blade reroll and final reveal state. Sessions are scoped by city and isolated between tables.
 
 ## Repo Map
 - `app/controllers`
@@ -49,6 +50,7 @@
 - Root: `/` → redirects to the default city's leaderboard (`City.ordered.first`).
 - City leaderboard: `/:city` (e.g. `/moscow`); filter a tour with `?tour=N`.
 - City rules: `/:city/rules`; player profile: `/:city/players/:id`.
+- Tides of Battle: `/:city/tides-of-battle` creates a fresh session and redirects to its tokenized URL.
 - Gallery (global): `/gallery`, login `/gallery/login`.
 - Admin login: `/admin/login`; admin home: `/admin`; tournament statistics: `/admin/statistics`.
 
@@ -130,6 +132,13 @@ Seeded admin credentials:
 - Public badges/cards: `app/controllers/{leaderboard,players}_controller.rb`, `app/views/{leaderboard,players}`
 - Tests: `test/services/tournament_statistics_calculator_test.rb`, `test/controllers/admin/statistics_controller_test.rb`, `test/models/achievement_award_test.rb`
 
+### Tides of Battle pass-and-play draw
+- Model/deck rules: `app/models/tides_of_battle_session.rb`
+- Controller/session flow: `app/controllers/tides_of_battle_sessions_controller.rb`
+- Mobile-first UI: `app/views/tides_of_battle_sessions`, `app/assets/stylesheets/application.css`
+- Main-page entry point: `app/views/leaderboard/index.html.erb`
+- Tests: `test/models/tides_of_battle_session_test.rb`, `test/controllers/tides_of_battle_sessions_controller_test.rb`
+
 ## Important Domain Rules
 - A player cannot appear twice at the same table, but may play at multiple tables in the same tour. Each result counts as a separate game in rankings and tournament statistics.
 - Houses are unique within one game. A player cannot reuse the same house across games except in Mother of Dragons' concluding eighth tour, where a house from tours 1–7 may be reused. The same player still cannot reuse one house at another table of tour 8, and Classic keeps the strict no-reuse rule. The admin editor marks previously played houses and warns explicitly when one is selected. Houses available per format come from `GameFormat#house_options`.
@@ -149,6 +158,9 @@ Seeded admin credentials:
 - Achievement publication requires complete configured tables: expected player count, required fields and a unique full place range. Unexpected result-bearing tables are reported as problems; tied nomination leaders are all published.
 - Public leaderboard/profile pages show only published achievements from the visited city. Refreshing publication replaces the current published snapshot; unpublishing keeps historical award rows but clears `published_at`.
 - Regular admins act only within their assigned cities. Players are global: a regular admin sees players in their cities, edits keep a player's links to other cities, and only superadmins delete players.
+- Every Tides of Battle combat uses a freshly shuffled official 24-card deck: 8× `+0`, 2× `+0 skull`, 4× `+1 sword`, 4× `+1 fortification`, 4× `+2`, 2× `+3`.
+- Attacker and defender draw without replacement from one session deck. A reroll is blocked until both have drawn, is available only once per combat, and draws from the remaining deck without returning either player's initial card. An identical face may still appear when another physical copy remains.
+- Hidden Tides of Battle cards must not be embedded in the other side's rendered markup. A private peek renders only the selected side, and battle responses disable browser/Turbo caching so a hidden card is not restored from navigation history.
 
 ## Working Conventions For Agents
 - Read `config/routes.rb` first when exploring behavior.
@@ -160,6 +172,7 @@ Seeded admin credentials:
 - When changing admin result behavior, update all of: view, both Stimulus controllers, server-side validations / save flow, and relevant controller/model tests. The save flow recreates rows with `delete_all + insert_all`; preserve hidden round-trip fields.
 - The project uses fixtures, not factories. Records created inline in tests must satisfy multi-city constraints: tours/pages need a `city:`; players need a `PlayerCity` link to appear on a city's leaderboard (`test/fixtures/cities.yml`, `player_cities.yml`, `site_pages.yml`). Admin fixtures: `admin` is `superadmin: true`, `city_admin` is a regular admin scoped to Moscow via `admin_user_cities.yml`.
 - Seeds are a realistic local scenario; avoid breaking `bin/rails db:seed:replant`.
+- When changing Tides of Battle behavior, preserve row locking for concurrent draws, the shared-deck/no-replacement rule, the global one-reroll limit and side-specific private rendering. Cover both model transitions and controller visibility.
 
 ## Done Criteria
 - Run targeted tests for the changed area.

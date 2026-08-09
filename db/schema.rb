@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_21_190000) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_09_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -152,6 +152,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_21_190000) do
     t.index ["city_id"], name: "index_site_pages_on_city_id"
   end
 
+  create_table "tides_of_battle_sessions", force: :cascade do |t|
+    t.string "attacker_card"
+    t.bigint "city_id", null: false
+    t.datetime "created_at", null: false
+    t.jsonb "deck_order", default: [], null: false
+    t.string "defender_card"
+    t.string "rerolled_side"
+    t.datetime "revealed_at"
+    t.string "token", null: false
+    t.datetime "updated_at", null: false
+    t.index ["city_id"], name: "index_tides_of_battle_sessions_on_city_id"
+    t.index ["token"], name: "index_tides_of_battle_sessions_on_token", unique: true
+  end
+
   create_table "tours", force: :cascade do |t|
     t.bigint "city_id", null: false
     t.datetime "created_at", null: false
@@ -180,5 +194,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_21_190000) do
   add_foreign_key "player_cities", "cities"
   add_foreign_key "player_cities", "players"
   add_foreign_key "site_pages", "cities"
+  add_foreign_key "tides_of_battle_sessions", "cities"
   add_foreign_key "tours", "cities"
 end

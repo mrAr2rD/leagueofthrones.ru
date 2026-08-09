@@ -3,6 +3,7 @@
 League of Thrones is a Rails application for running and publishing a tournament:
 
 - city-scoped public leaderboards, tour results, player profiles and rules
+- a city-scoped mobile-first Tides of Battle pass-and-play draw
 - published tournament achievements on leaderboards and player profiles
 - global gallery login/page
 - admin workflows for cities, players, tours, game results, statistics, achievements and editable pages
@@ -26,6 +27,8 @@ League of Thrones is a Rails application for running and publishing a tournament
 - [`app/services/ranking_calculator.rb`](app/services/ranking_calculator.rb) recalculates standings.
 - [`app/services/tournament_statistics_calculator.rb`](app/services/tournament_statistics_calculator.rb) aggregates per-city, per-format tournament statistics and achievement nominations.
 - [`app/models/game_format.rb`](app/models/game_format.rb) is the scoring and format registry shared with the admin points calculator.
+- [`app/models/tides_of_battle_session.rb`](app/models/tides_of_battle_session.rb) owns an isolated Tides of Battle deck and draw state for one combat.
+- [`app/controllers/tides_of_battle_sessions_controller.rb`](app/controllers/tides_of_battle_sessions_controller.rb) serves the pass-and-play draw, private peeks, one Valyrian Steel Blade reroll and final reveal.
 - [`db/seeds.rb`](db/seeds.rb) creates a realistic local dataset.
 - [`test`](test) contains the Minitest suite and fixtures.
 
@@ -159,6 +162,13 @@ Relevant tests:
 - [`app/services/ranking_calculator.rb`](app/services/ranking_calculator.rb)
 - [`test/controllers/leaderboard_controller_test.rb`](test/controllers/leaderboard_controller_test.rb)
 
+### Tides of Battle draw
+- [`app/models/tides_of_battle_session.rb`](app/models/tides_of_battle_session.rb)
+- [`app/controllers/tides_of_battle_sessions_controller.rb`](app/controllers/tides_of_battle_sessions_controller.rb)
+- [`app/views/tides_of_battle_sessions`](app/views/tides_of_battle_sessions)
+- [`test/models/tides_of_battle_session_test.rb`](test/models/tides_of_battle_session_test.rb)
+- [`test/controllers/tides_of_battle_sessions_controller_test.rb`](test/controllers/tides_of_battle_sessions_controller_test.rb)
+
 ### Cities, formats, tours and access control
 - [`app/models/city.rb`](app/models/city.rb)
 - [`app/models/game_format.rb`](app/models/game_format.rb)
@@ -217,12 +227,21 @@ Relevant tests:
 - Superadmins can access every city and manage cities/admins. Regular admins are
   limited to assigned cities; player records remain global and links to inaccessible
   cities are preserved during edits.
+- Opening `/:city/tides-of-battle` creates a tokenized combat session for one shared
+  phone. Different tables use different sessions and cannot consume each other's cards.
+- Each combat starts with the official 24-card Tides of Battle deck: eight `+0`, two
+  `+0 skull`, four `+1 sword`, four `+1 fortification`, four `+2` and two `+3` cards.
+- Attacker and defender draw without replacement from the same shuffled deck. Their
+  cards stay hidden until a side-specific peek or the final reveal. A single Valyrian
+  Steel Blade reroll is available only after both initial draws; neither initial card
+  is returned to the deck, and the replacement card is mandatory.
 
 ## Useful URLs
 - Root redirect: [http://127.0.0.1:3000/](http://127.0.0.1:3000/)
 - Moscow leaderboard: [http://127.0.0.1:3000/moscow](http://127.0.0.1:3000/moscow)
 - Tour results: [http://127.0.0.1:3000/moscow?tour=1](http://127.0.0.1:3000/moscow?tour=1)
 - Moscow rules: [http://127.0.0.1:3000/moscow/rules](http://127.0.0.1:3000/moscow/rules)
+- Tides of Battle: [http://127.0.0.1:3000/moscow/tides-of-battle](http://127.0.0.1:3000/moscow/tides-of-battle)
 - Gallery login: [http://127.0.0.1:3000/gallery/login](http://127.0.0.1:3000/gallery/login)
 - Admin root: [http://127.0.0.1:3000/admin](http://127.0.0.1:3000/admin)
 - Admin statistics: [http://127.0.0.1:3000/admin/statistics](http://127.0.0.1:3000/admin/statistics)

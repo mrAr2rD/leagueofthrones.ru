@@ -5,6 +5,7 @@ class LeaderboardControllerTest < ActionDispatch::IntegrationTest
     get city_leaderboard_url(cities(:moscow))
     assert_response :success
     assert_select "h1", /Игра Престолов/
+    assert_select "a[href=?]", city_tides_of_battle_path(cities(:moscow)), text: "Перевес"
   end
 
   test "shows player names" do

@@ -6,6 +6,7 @@ class City < ApplicationRecord
   has_many :admin_user_cities, dependent: :destroy
   has_many :admin_users, through: :admin_user_cities
   has_many :achievement_awards, dependent: :destroy
+  has_many :tides_of_battle_sessions, dependent: :destroy
 
   validates :name, presence: true
   validates :slug, presence: true, uniqueness: true,

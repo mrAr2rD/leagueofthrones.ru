@@ -1,0 +1,13 @@
+<div class="tides-card tides-card-face tides-card-face-<%= card[:symbol] || "plain" %>"
+     data-testid="<%= side %>-card-face"
+     aria-label="Карта перевеса: плюс <%= card[:strength] %>, <%= card[:label].downcase %>">
+  <span class="tides-card-corner">+<%= card[:strength] %></span>
+  <span class="tides-card-strength">+<%= card[:strength] %></span>
+  <% if card[:symbol].present? %>
+    <span class="tides-card-symbol tides-card-symbol-<%= card[:symbol] %>" aria-hidden="true"></span>
+    <span class="tides-card-symbol-label"><%= card[:label] %></span>
+  <% else %>
+    <span class="tides-card-plain-mark" aria-hidden="true">◆</span>
+    <span class="tides-card-symbol-label">Без символа</span>
+  <% end %>
+</div>

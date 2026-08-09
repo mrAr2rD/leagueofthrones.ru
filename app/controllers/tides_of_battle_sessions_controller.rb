@@ -8,8 +8,8 @@ class TidesOfBattleSessionsController < ApplicationController
   rescue_from ArgumentError, with: :render_invalid_side
 
   def new
-    battle_session = @city.tides_of_battle_sessions.create!
-    redirect_to city_tides_of_battle_session_path(@city, battle_session.token)
+    @battle_session = @city.tides_of_battle_sessions.create!
+    redirect_to battle_session_path
   end
 
   def show

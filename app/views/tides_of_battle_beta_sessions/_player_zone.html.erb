@@ -1,0 +1,125 @@
+<% drawn = @battle_session.card_drawn?(side) %>
+<% visible = @battle_session.revealed? || @peeked_side == side %>
+<% reel_cards = TidesOfBattleSession::DECK.map do |key|
+     face = TidesOfBattleSession::CARD_FACES.fetch(key)
+     { key: key, strength: face.fetch(:strength), symbol: face[:symbol], label: face.fetch(:label) }
+   end %>
+
+<article class="tides-player-zone tides-player-zone-<%= side %> tides-beta-player-zone"
+         data-controller="tides-reel"
+         data-tides-reel-duration-value="5000"
+         data-tides-reel-cards-value="<%= reel_cards.to_json %>"
+         data-testid="<%= side %>-zone">
+  <div class="tides-beta-spin-overlay"
+       data-tides-reel-target="overlay"
+       data-testid="<%= side %>-spin-overlay"
+       aria-hidden="true"
+       aria-live="polite">
+    <div class="tides-beta-case-machine" data-tides-reel-target="machine">
+      <span class="tides-beta-case-lights" aria-hidden="true"></span>
+      <div class="tides-beta-case-window" data-tides-reel-target="window">
+        <span class="tides-beta-case-pointer" aria-hidden="true"></span>
+        <div class="tides-beta-reel-track" data-tides-reel-target="track">
+          <% reel_cards.each do |card| %>
+            <span class="tides-beta-case-card tides-beta-case-card-<%= card[:symbol] || "plain" %>"
+                  data-card-key="<%= card[:key] %>">
+              <b>+<%= card[:strength] %></b>
+              <% if card[:symbol].present? %>
+                <i class="tides-card-symbol-<%= card[:symbol] %>" aria-hidden="true"></i>
+              <% else %>
+                <i class="tides-beta-case-plain" aria-hidden="true"></i>
+              <% end %>
+              <small><%= card[:label] %></small>
+            </span>
+          <% end %>
+        </div>
+      </div>
+      <strong data-tides-reel-target="status">Судьба выбирает сторону…</strong>
+    </div>
+  </div>
+
+  <div class="tides-player-label">
+    <span><%= number %></span>
+    <h2><%= title %></h2>
+  </div>
+
+  <div class="tides-card-stage">
+    <% if visible %>
+      <%= render "tides_of_battle_sessions/card", card: @battle_session.card_for(side), side: side %>
+    <% elsif drawn %>
+      <div class="tides-card tides-card-back tides-beta-card-back" data-testid="<%= side %>-card-back">
+        <span class="tides-card-back-mark">?</span>
+        <span class="tides-card-back-title">Перевес</span>
+      </div>
+    <% else %>
+      <div class="tides-beta-idle-machine" data-testid="<%= side %>-card-empty">
+        <span class="tides-beta-idle-lights" aria-hidden="true"></span>
+        <span class="tides-beta-idle-window" aria-hidden="true">?</span>
+        <span>Барабан готов</span>
+      </div>
+    <% end %>
+  </div>
+
+  <div class="tides-actions">
+    <% if @auto_hide %>
+      <% if @peeked_side == side %>
+        <div class="tides-beta-auto-hide" role="status" data-testid="<%= side %>-auto-hide">
+          <strong>Ваша карта</strong>
+          <span>Скроется через 2 секунды</span>
+          <i aria-hidden="true"></i>
+        </div>
+      <% else %>
+        <span class="tides-beta-preview-wait">Идёт просмотр карты</span>
+      <% end %>
+    <% else %>
+      <% unless drawn %>
+        <%= button_to "Дёрнуть рычаг",
+                      city_tides_of_battle_beta_draw_path(@city, @battle_session.token, side),
+                      class: "tides-draw-button tides-beta-draw-button",
+                      form: {
+                        data: {
+                          turbo_frame: "battle_board",
+                          action: "submit->tides-reel#spin"
+                        }
+                      } %>
+      <% end %>
+
+      <% if drawn && !@battle_session.revealed? %>
+        <% if @peeked_side == side %>
+          <%= link_to city_tides_of_battle_beta_session_path(@city, @battle_session.token),
+                      class: "tides-icon-button tides-hide-button",
+                      aria: { label: "Скрыть карту #{title.downcase}" },
+                      data: { turbo_frame: "battle_board" } do %>
+            <span class="tides-eye tides-eye-closed" aria-hidden="true"></span>
+            Скрыть
+          <% end %>
+        <% else %>
+          <%= button_to city_tides_of_battle_beta_peek_path(@city, @battle_session.token, side),
+                        class: "tides-icon-button",
+                        aria: { label: "Посмотреть карту #{title.downcase}" },
+                        form: { data: { turbo_frame: "battle_board" } } do %>
+            <span class="tides-eye" aria-hidden="true"></span>
+            Моя карта
+          <% end %>
+        <% end %>
+
+        <% if @peeked_side == side && @battle_session.reroll_available? %>
+          <%= button_to city_tides_of_battle_beta_reroll_path(@city, @battle_session.token, side),
+                        class: "tides-reroll-button tides-beta-reroll-button",
+                        form: {
+                          data: {
+                            turbo_frame: "battle_board",
+                            action: "submit->tides-reel#spin",
+                            tides_reel_confirm_message: "Использовать Валирийский меч? Новую карту придётся оставить."
+                          }
+                        } do %>
+            <span aria-hidden="true">⚔</span>
+            Реролл мечом
+          <% end %>
+        <% elsif @battle_session.rerolled_side.present? %>
+          <span class="tides-reroll-used">Меч уже использован</span>
+        <% end %>
+      <% end %>
+    <% end %>
+  </div>
+</article>

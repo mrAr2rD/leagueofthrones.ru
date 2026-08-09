@@ -14,6 +14,7 @@ class TidesOfBattleSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "no-store", response.headers["Cache-Control"]
     assert_select "[data-testid=attacker-zone]"
     assert_select "[data-testid=defender-zone]"
+    assert_select "a[href=?]", city_tides_of_battle_beta_path(cities(:moscow)), text: "Бета версия"
   end
 
   test "keeps both drawn cards hidden" do

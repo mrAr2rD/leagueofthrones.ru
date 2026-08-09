@@ -1,0 +1,62 @@
+<% content_for :title, "Карты перевеса BETA — LEAGUE OF THRONES" %>
+<% content_for :head do %>
+  <meta name="turbo-cache-control" content="no-cache">
+<% end %>
+
+<main class="tides-page tides-beta-page">
+  <header class="tides-header tides-beta-header">
+    <%= link_to city_leaderboard_path(@city), class: "pixel-back-link" do %>
+      ← На главную
+    <% end %>
+    <div class="tides-heading">
+      <span class="tides-kicker"><%= @city.name %></span>
+      <h1>Карты перевеса <span>BETA</span></h1>
+    </div>
+    <span class="tides-header-spacer" aria-hidden="true"></span>
+  </header>
+
+  <%= turbo_frame_tag "battle_board" do %>
+    <div class="tides-beta-frame"
+         <% if @auto_hide %>
+           data-controller="tides-auto-hide"
+           data-tides-auto-hide-delay-value="2000"
+           data-tides-auto-hide-url-value="<%= city_tides_of_battle_beta_session_path(@city, @battle_session.token) %>"
+         <% end %>>
+      <% if flash[:alert].present? %>
+        <p class="tides-alert" role="alert"><%= flash[:alert] %></p>
+      <% end %>
+
+      <section class="tides-arena tides-beta-arena" data-testid="tides-beta-arena">
+        <%= render "player_zone", side: "attacker", title: "Атакующий", number: "I" %>
+
+        <div class="tides-clash-divider tides-beta-divider">
+          <span class="tides-divider-line" aria-hidden="true"></span>
+          <% if @battle_session.revealed? %>
+            <span class="tides-battle-status">Итог боя</span>
+          <% elsif @battle_session.both_drawn? %>
+            <%= button_to "Открыть обе карты",
+                          city_tides_of_battle_beta_reveal_path(@city, @battle_session.token),
+                          class: "tides-reveal-button tides-beta-reveal-button",
+                          form: { data: { turbo_frame: "battle_board" } } %>
+          <% else %>
+            <span class="tides-battle-status">Дёрните рычаг по очереди</span>
+          <% end %>
+          <span class="tides-divider-line" aria-hidden="true"></span>
+        </div>
+
+        <%= render "player_zone", side: "defender", title: "Защищающийся", number: "II" %>
+      </section>
+
+      <footer class="tides-footer tides-beta-footer">
+        <% if @battle_session.revealed? %>
+          <%= link_to "Новый бой BETA",
+                      city_tides_of_battle_beta_path(@city),
+                      class: "tides-new-battle",
+                      data: { turbo_prefetch: false, turbo_frame: "_top" } %>
+        <% else %>
+          <p>Лента останавливается на реально выпавшей карте. Через 2 секунды результат снова скрывается.</p>
+        <% end %>
+      </footer>
+    </div>
+  <% end %>
+</main>

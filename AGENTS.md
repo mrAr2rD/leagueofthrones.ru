@@ -51,6 +51,7 @@
 - City leaderboard: `/:city` (e.g. `/moscow`); filter a tour with `?tour=N`.
 - City rules: `/:city/rules`; player profile: `/:city/players/:id`.
 - Tides of Battle: `/:city/tides-of-battle` creates a fresh session and redirects to its tokenized URL.
+- Tides of Battle beta: `/:city/tides-of-battle-beta` keeps the same session rules with a result-aware reel animation; the classic tool links to it and remains available separately.
 - Gallery (global): `/gallery`, login `/gallery/login`.
 - Admin login: `/admin/login`; admin home: `/admin`; tournament statistics: `/admin/statistics`.
 
@@ -134,10 +135,10 @@ Seeded admin credentials:
 
 ### Tides of Battle pass-and-play draw
 - Model/deck rules: `app/models/tides_of_battle_session.rb`
-- Controller/session flow: `app/controllers/tides_of_battle_sessions_controller.rb`
-- Mobile-first UI: `app/views/tides_of_battle_sessions`, `app/assets/stylesheets/application.css`
+- Controller/session flow: `app/controllers/tides_of_battle_sessions_controller.rb`, `app/controllers/tides_of_battle_beta_sessions_controller.rb`
+- Mobile-first UI: `app/views/tides_of_battle_sessions`, `app/views/tides_of_battle_beta_sessions`, `app/assets/stylesheets/application.css`
 - Main-page entry point: `app/views/leaderboard/index.html.erb`
-- Tests: `test/models/tides_of_battle_session_test.rb`, `test/controllers/tides_of_battle_sessions_controller_test.rb`
+- Tests: `test/models/tides_of_battle_session_test.rb`, `test/controllers/tides_of_battle_sessions_controller_test.rb`, `test/controllers/tides_of_battle_beta_sessions_controller_test.rb`
 
 ## Important Domain Rules
 - A player cannot appear twice at the same table, but may play at multiple tables in the same tour. Each result counts as a separate game in rankings and tournament statistics.

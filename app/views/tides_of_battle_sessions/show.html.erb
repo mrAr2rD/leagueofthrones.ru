@@ -4,7 +4,7 @@
 <% end %>
 
 <main class="tides-page">
-  <header class="tides-header">
+  <header class="tides-header tides-header-with-beta-entry">
     <%= link_to city_leaderboard_path(@city), class: "pixel-back-link" do %>
       ← На главную
     <% end %>
@@ -12,7 +12,10 @@
       <span class="tides-kicker"><%= @city.name %></span>
       <h1>Карты перевеса</h1>
     </div>
-    <span class="tides-header-spacer" aria-hidden="true"></span>
+    <%= link_to "Бета версия",
+                city_tides_of_battle_beta_path(@city),
+                class: "pixel-back-link tides-beta-entry",
+                data: { turbo_prefetch: false, turbo_frame: "_top" } %>
   </header>
 
   <%= turbo_frame_tag "battle_board" do %>

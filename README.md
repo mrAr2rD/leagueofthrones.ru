@@ -165,9 +165,12 @@ Relevant tests:
 ### Tides of Battle draw
 - [`app/models/tides_of_battle_session.rb`](app/models/tides_of_battle_session.rb)
 - [`app/controllers/tides_of_battle_sessions_controller.rb`](app/controllers/tides_of_battle_sessions_controller.rb)
+- [`app/controllers/tides_of_battle_beta_sessions_controller.rb`](app/controllers/tides_of_battle_beta_sessions_controller.rb)
 - [`app/views/tides_of_battle_sessions`](app/views/tides_of_battle_sessions)
+- [`app/views/tides_of_battle_beta_sessions`](app/views/tides_of_battle_beta_sessions)
 - [`test/models/tides_of_battle_session_test.rb`](test/models/tides_of_battle_session_test.rb)
 - [`test/controllers/tides_of_battle_sessions_controller_test.rb`](test/controllers/tides_of_battle_sessions_controller_test.rb)
+- [`test/controllers/tides_of_battle_beta_sessions_controller_test.rb`](test/controllers/tides_of_battle_beta_sessions_controller_test.rb)
 
 ### Cities, formats, tours and access control
 - [`app/models/city.rb`](app/models/city.rb)
@@ -229,6 +232,8 @@ Relevant tests:
   cities are preserved during edits.
 - Opening `/:city/tides-of-battle` creates a tokenized combat session for one shared
   phone. Different tables use different sessions and cannot consume each other's cards.
+- `/:city/tides-of-battle-beta` runs the same isolated deck rules with a weighted,
+  result-aware reel animation. The main tool links to it without replacing the classic UI.
 - Each combat starts with the official 24-card Tides of Battle deck: eight `+0`, two
   `+0 skull`, four `+1 sword`, four `+1 fortification`, four `+2` and two `+3` cards.
 - Attacker and defender draw without replacement from the same shuffled deck. Their
@@ -242,6 +247,7 @@ Relevant tests:
 - Tour results: [http://127.0.0.1:3000/moscow?tour=1](http://127.0.0.1:3000/moscow?tour=1)
 - Moscow rules: [http://127.0.0.1:3000/moscow/rules](http://127.0.0.1:3000/moscow/rules)
 - Tides of Battle: [http://127.0.0.1:3000/moscow/tides-of-battle](http://127.0.0.1:3000/moscow/tides-of-battle)
+- Tides of Battle beta: [http://127.0.0.1:3000/moscow/tides-of-battle-beta](http://127.0.0.1:3000/moscow/tides-of-battle-beta)
 - Gallery login: [http://127.0.0.1:3000/gallery/login](http://127.0.0.1:3000/gallery/login)
 - Admin root: [http://127.0.0.1:3000/admin](http://127.0.0.1:3000/admin)
 - Admin statistics: [http://127.0.0.1:3000/admin/statistics](http://127.0.0.1:3000/admin/statistics)
